@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab6 · Incontro 3 — Machine learning con Python in classe</title>
+
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js"></script>
+
+<style>
+  :root{ --font-display:'Fraunces', serif; --font-body:'Inter', sans-serif; --font-mono:'IBM Plex Mono', monospace; }
+  [data-theme="dark"]{
+    --bg:#14161A; --surface:#1D2025; --surface-2:#24272D; --ink:#ECE9E1; --ink-soft:#9CA3A8; --rule:#2C3036;
+    --gold:#E8C177; --gold-soft:#4A4331; --add:#7FBE8F; --add-soft:rgba(127,190,143,.16);
+    --del:#DE8B85; --del-soft:rgba(194,85,74,.22); --link:#6FB8B2; --link-soft:#263936; --canvas:#0F1013;
+  }
+  [data-theme="light"]{
+    --bg:#F1F0EA; --surface:#E7E3D6; --surface-2:#DEDACC; --ink:#1B1D1F; --ink-soft:#5B5F5A; --rule:#D3CFBF;
+    --gold:#8C5F19; --gold-soft:#EEDFB9; --add:#3F7A4E; --add-soft:#DCEBDD;
+    --del:#A23F3A; --del-soft:#F0DAD8; --link:#1F6F6B; --link-soft:#D9E6E4; --canvas:#08090A;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  [x-cloak]{ display:none !important; }
+  html,body{ height:100%; background:var(--canvas); font-family:var(--font-body); color:var(--ink); }
+  code{ font-family:var(--font-mono); font-size:.92em; background:var(--surface); padding:.05em .3em; border-radius:2px; }
+
+  .stage{ position:relative; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--canvas); }
+  .deck{ position:relative; background:var(--bg); width:min(100vw, calc(100vh * 16 / 9)); height:min(100vh, calc(100vw * 9 / 16));
+         box-shadow:0 40px 100px rgba(0,0,0,.5); overflow:hidden; display:flex; transition:background .25s ease; }
+
+  .gutter{ flex:0 0 3.4rem; height:100%; border-right:1px solid var(--rule); display:flex; flex-direction:column; align-items:center; padding-top:clamp(1.6rem,3.5vw,2.6rem); position:relative; }
+  .gutter .idx{ font-family:var(--font-mono); font-size:.74rem; color:var(--ink-soft); }
+  .gutter .idx b{ color:var(--gold); font-weight:500; }
+  .gutter .rail-line{ position:absolute; top:4.4rem; bottom:2rem; left:50%; width:1px; background:var(--rule); }
+
+  .frame{ position:relative; flex:1; height:100%; }
+  .slide{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:clamp(1.8rem,4.2vw,3.6rem); padding-bottom:3.6rem; overflow:hidden; }
+
+  .badge{ position:absolute; top:1.15rem; left:clamp(1.8rem,4.2vw,3.6rem); font-family:var(--font-mono); font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; }
+  .badge.core{ color:var(--add); } .badge.extra{ color:var(--ink-soft); }
+
+  .path{ font-family:var(--font-mono); font-size:clamp(.62rem,.95vw,.74rem); letter-spacing:.02em; color:var(--ink-soft); margin-bottom:1rem; }
+  .path b{ color:var(--gold); font-weight:500; }
+  .title{ font-family:var(--font-display); font-weight:600; font-optical-sizing:auto; line-height:1.05; color:var(--ink); font-size:clamp(1.5rem,3.3vw,2.7rem); max-width:26ch; }
+  .subtitle{ color:var(--ink-soft); font-size:clamp(.92rem,1.4vw,1.15rem); max-width:52ch; margin-top:1rem; line-height:1.55; }
+  .body-text{ font-size:clamp(.9rem,1.3vw,1.1rem); color:var(--ink-soft); line-height:1.6; max-width:72ch; margin-top:1.1rem; }
+  .body-text strong{ color:var(--ink); }
+  .meta-row{ font-family:var(--font-mono); font-size:clamp(.6rem,.9vw,.74rem); color:var(--ink-soft); margin-top:1.8rem; display:flex; gap:1.3rem; flex-wrap:wrap; }
+  .meta-row span{ padding-left:1.3rem; position:relative; } .meta-row span:first-child{ padding-left:0; }
+  .meta-row span:not(:first-child)::before{ content:"·"; position:absolute; left:.4rem; color:var(--rule); }
+
+  .slide[data-type="cover"] .title{ max-width:16ch; font-size:clamp(1.9rem,4.2vw,3.4rem); }
+  .slide[data-type="cover"] .path{ color:var(--gold); }
+
+  .agenda-list{ list-style:none; margin-top:1.5rem; max-width:60ch; }
+  .agenda-list li{ position:relative; padding:.45rem 0 .45rem 2.1rem; font-size:clamp(.86rem,1.25vw,1.02rem); color:var(--ink); }
+  .agenda-list li::before{ content:attr(data-n); position:absolute; left:0; top:.45rem; font-family:var(--font-mono); font-size:.68rem; color:var(--bg); background:var(--link);
+    width:1.4rem; height:1.4rem; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .agenda-list li:not(:last-child)::after{ content:""; position:absolute; left:.69rem; top:1.95rem; height:calc(100% - 1.1rem); width:1px; background:var(--rule); }
+
+  .bullet-list{ list-style:none; margin-top:1.4rem; max-width:70ch; }
+  .bullet-list li{ position:relative; padding:.42rem 0 .42rem 1.5rem; font-size:clamp(.92rem,1.4vw,1.14rem); color:var(--ink); line-height:1.5; }
+  .bullet-list li::before{ content:"›"; position:absolute; left:0; top:.38rem; font-family:var(--font-mono); color:var(--gold); font-size:1rem; }
+
+  .slide[data-type="definizione"] .deflabel{ font-family:var(--font-display); font-weight:600; font-size:clamp(1.4rem,2.8vw,2.2rem); color:var(--gold); }
+  .defbox{ margin-top:1.4rem; border-left:2px solid var(--gold); background:var(--gold-soft); padding:1.1rem 1.4rem; max-width:74ch;
+           font-size:clamp(.9rem,1.3vw,1.08rem); color:var(--ink); line-height:1.65; }
+  .defbox code{ background:transparent; }
+
+  .compare{ margin-top:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; max-width:100%; }
+  .compare-col{ border-top:2px solid var(--rule); padding-top:.8rem; }
+  .compare-col.del{ border-top-color:var(--del); } .compare-col.add{ border-top-color:var(--add); } .compare-col.link{ border-top-color:var(--link); }
+  .compare-col h3{ font-family:var(--font-mono); font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:.6rem; }
+  .compare-col.del h3{ color:var(--del); } .compare-col.add h3{ color:var(--add); } .compare-col.link h3{ color:var(--link); }
+  .compare-col ul{ padding-left:1.1rem; color:var(--ink); font-size:clamp(.9rem,1.3vw,1.08rem); line-height:1.6; }
+
+  .step-list{ list-style:none; margin-top:1.4rem; max-width:64ch; counter-reset:step; }
+  .step-list li{ counter-increment:step; position:relative; padding:.45rem 0 .45rem 2.5rem; font-size:clamp(.92rem,1.35vw,1.12rem); color:var(--ink); line-height:1.5; }
+  .step-list li::before{ content:counter(step); position:absolute; left:0; top:.32rem; font-family:var(--font-mono); font-weight:500; font-size:.8rem; color:var(--link);
+    border:1px solid var(--link); width:1.6rem; height:1.6rem; border-radius:3px; display:flex; align-items:center; justify-content:center; }
+  .note{ margin-top:1.1rem; font-family:var(--font-mono); font-size:clamp(.68rem,1vw,.82rem); color:var(--ink-soft); max-width:100%; line-height:1.5; }
+
+  .code-block{ margin-top:1.2rem; background:var(--surface); border:1px solid var(--rule); color:var(--ink); font-family:var(--font-mono);
+               font-size:clamp(.72rem,1.15vw,.98rem); padding:1rem 1.4rem; max-width:100%; line-height:1.6; overflow:auto; white-space:pre; }
+  .code-block .cm{ color:var(--ink-soft); } .code-block .op{ color:var(--gold); }
+  .code-block .k-del{ color:var(--del); font-weight:600; } .code-block .k-add{ color:var(--add); font-weight:600; } .code-block .k-mid{ color:var(--gold); font-weight:600; }
+
+  .tab{ margin-top:1.2rem; border-collapse:collapse; max-width:100%; width:100%; font-size:clamp(.8rem,1.2vw,1.02rem); }
+  .tab th{ text-align:left; font-family:var(--font-mono); font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);
+           border-bottom:2px solid var(--gold); padding:.4rem .6rem; }
+  .tab td{ border-bottom:1px solid var(--rule); padding:.42rem .6rem; color:var(--ink); vertical-align:top; line-height:1.45; }
+
+  .slide[data-type="attenzione"]{ background:var(--canvas); }
+  .slide[data-type="attenzione"] .path{ color:var(--gold); }
+  .slide[data-type="attenzione"] .quote{ font-family:var(--font-display); font-weight:600; font-style:italic; color:#F4F1E9; font-size:clamp(1.4rem,3.2vw,2.5rem); max-width:22ch; line-height:1.18; }
+  .slide[data-type="attenzione"] .body-text{ color:#A9A497; }
+
+  .slide[data-type="riepilogo"] .bullet-list li::before{ color:var(--add); content:"✓"; font-size:.85rem; top:.48rem; }
+  .slide[data-type="chiusura"] .title{ color:var(--gold); }
+
+  .cycle{ position:relative; width:min(38vw,21rem); aspect-ratio:1/1; margin:1rem auto 0; }
+  .cycle svg.ring circle{ fill:none; stroke:var(--rule); stroke-width:1.5; stroke-dasharray:2 6; }
+  .cycle svg.ring{ position:absolute; inset:0; overflow:visible; }
+  .cycle-node{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:.3rem; width:7rem; text-align:center; }
+  .cycle-node .dot{ width:2.2rem; height:2.2rem; border-radius:50%; background:var(--bg); border:1.5px solid var(--link); display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:.72rem; color:var(--link); }
+  .cycle-node.current .dot{ background:var(--gold); border-color:var(--gold); color:var(--bg); }
+  .cycle-node span.label{ font-size:.74rem; color:var(--ink); line-height:1.2; background:var(--bg); }
+  .cycle-caption{ margin-top:1rem; font-family:var(--font-mono); font-size:.7rem; color:var(--ink-soft); text-align:center; }
+
+  .diff-file{ margin-top:1.4rem; display:flex; align-items:center; gap:.6rem; font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft); }
+  .diff-file .dot{ width:.5rem; height:.5rem; border-radius:50%; } .diff-file .dot.add{ background:var(--add); } .diff-file .dot.del{ background:var(--del); margin-left:.8rem; }
+  .diff-block{ margin-top:.6rem; max-width:72ch; font-family:var(--font-mono); font-size:clamp(.72rem,1.05vw,.88rem); line-height:1.7; background:var(--surface); border:1px solid var(--rule); padding:.9rem 0; overflow-x:auto; }
+  .diff-line{ padding:.08rem 1.3rem; white-space:pre; color:var(--ink-soft); }
+  .diff-line.add{ background:var(--add-soft); color:var(--ink); } .diff-line.add::before{ content:"+ "; color:var(--add); }
+  .diff-line.del{ background:var(--del-soft); color:var(--ink-soft); text-decoration:line-through; text-decoration-color:var(--del); } .diff-line.del::before{ content:"- "; color:var(--del); }
+  .diff-line.ctx::before{ content:"  "; }
+
+  .grid-cards{ margin-top:1.4rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(12rem,1fr)); gap:1.2rem 1.8rem; max-width:100%; }
+  .grid-card{ border-top:2px solid var(--rule); padding-top:.55rem; }
+  .grid-card.gold{ border-top-color:var(--gold); } .grid-card.link{ border-top-color:var(--link); } .grid-card.del{ border-top-color:var(--del); } .grid-card.add{ border-top-color:var(--add); }
+  .grid-card h4{ font-family:var(--font-mono); font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink); margin-bottom:.3rem; }
+  .grid-card p{ font-size:clamp(.82rem,1.22vw,1rem); color:var(--ink-soft); line-height:1.45; }
+  .grid-card p code{ font-size:.85em; }
+
+  /* ---- schema: SVG che eredita i colori del tema ---- */
+  svg.schema{ width:100%; max-width:100%; height:auto; margin-top:1rem; overflow:visible; }
+  svg.schema .box{ fill:var(--surface); stroke:var(--rule); stroke-width:1.5; }
+  svg.schema .box.gold{ stroke:var(--gold); } svg.schema .box.link{ stroke:var(--link); } svg.schema .box.add{ stroke:var(--add); }
+  svg.schema .t{ fill:var(--ink); font-family:var(--font-display); font-weight:600; font-size:22px; text-anchor:middle; }
+  svg.schema .s{ fill:var(--ink-soft); font-family:var(--font-body); font-size:14px; text-anchor:middle; }
+  svg.schema .c{ fill:var(--gold); font-family:var(--font-mono); font-size:14px; text-anchor:middle; }
+  svg.schema .a{ stroke:var(--gold); stroke-width:2; fill:none; } svg.schema .a.back{ stroke:var(--link); stroke-dasharray:6 5; }
+  svg.schema .m{ fill:var(--gold); }
+  svg.schema .l{ stroke-width:3; fill:none; } svg.schema .l.main{ stroke:var(--link); } svg.schema .l.br{ stroke:var(--gold); }
+  svg.schema .n{ fill:var(--bg); stroke:var(--link); stroke-width:3; } svg.schema .n.b{ stroke:var(--gold); } svg.schema .n.m{ fill:var(--add); stroke:var(--add); }
+  svg.schema .lab{ fill:var(--link); font-family:var(--font-mono); font-size:16px; } svg.schema .lab.b{ fill:var(--gold); }
+
+  .tab.compatta{ font-size:clamp(.72rem,1.05vw,.9rem); } .tab.compatta td{ padding:.3rem .5rem; }
+  .liv{ display:inline-block; font-family:var(--font-mono); font-size:.72em; padding:.05em .45em; border:1px solid var(--rule); border-radius:2px; }
+  .liv.l0{ color:var(--del); border-color:var(--del); } .liv.l1, .liv.l2{ color:var(--gold); border-color:var(--gold); }
+  .liv.l3{ color:var(--link); border-color:var(--link); } .liv.l4{ color:var(--add); border-color:var(--add); }
+  svg.schema .box.del{ stroke:var(--del); } svg.schema .fillsoft{ fill:var(--gold-soft); }
+  svg.schema .tl{ fill:var(--ink); font-family:var(--font-body); font-size:15px; text-anchor:start; }
+  .print-notes{ display:none; margin-top:1.1rem; padding-top:.8rem; border-top:1px dashed var(--rule); font-family:var(--font-mono); font-size:.7rem; color:var(--ink-soft); max-width:80ch; line-height:1.55; }
+  .notes-on .print-notes{ display:block; }
+  .print-notes .notes-label{ display:block; text-transform:uppercase; letter-spacing:.08em; color:var(--gold); margin-bottom:.3rem; font-size:.62rem; }
+
+  .toolbar{ position:absolute; top:1rem; right:1rem; display:flex; gap:.4rem; z-index:5; flex-wrap:wrap; justify-content:flex-end; }
+  .tbtn{ font-family:var(--font-mono); font-size:.62rem; letter-spacing:.05em; background:var(--surface); border:1px solid var(--rule); color:var(--ink-soft); padding:.36rem .6rem; cursor:pointer; border-radius:2px; }
+  .tbtn:hover{ color:var(--ink); border-color:var(--ink-soft); }
+  .tbtn.on{ color:var(--bg); background:var(--gold); border-color:var(--gold); }
+  .tbtn:focus-visible, .nav-btn:focus-visible, .rail-dot:focus-visible{ outline:2px solid var(--link); outline-offset:2px; }
+
+  .controls{ position:absolute; left:0; right:0; bottom:.9rem; display:flex; align-items:center; justify-content:center; gap:.8rem; pointer-events:none; }
+  .controls > *{ pointer-events:auto; }
+  .nav-btn{ width:1.9rem; height:1.9rem; border-radius:50%; border:1px solid var(--rule); background:var(--surface); color:var(--ink-soft); font-family:var(--font-mono); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .nav-btn:hover{ border-color:var(--link); color:var(--link); }
+  .rail{ display:flex; align-items:center; gap:.32rem; padding:.28rem .7rem; background:var(--surface); border:1px solid var(--rule); border-radius:999px; max-width:70%; flex-wrap:wrap; justify-content:center; }
+  .rail-dot{ width:.38rem; height:.38rem; border-radius:50%; background:transparent; border:1.2px solid var(--ink-soft); cursor:pointer; }
+  .rail-dot.core{ border-color:var(--add); }
+  .rail-dot.active{ background:var(--link); border-color:var(--link); width:.54rem; height:.54rem; }
+  .counter{ font-family:var(--font-mono); font-size:.66rem; color:var(--ink-soft); position:absolute; right:1.1rem; bottom:1.1rem; }
+  .mode{ font-family:var(--font-mono); font-size:.6rem; color:var(--add); position:absolute; left:1rem; bottom:1.1rem; text-transform:uppercase; letter-spacing:.06em; }
+
+  /* ---- vista relatore ---- */
+  .presenter{ display:none; }
+  body.is-presenter .stage{ display:none; }
+  body.is-presenter .presenter{ display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; padding:1.5rem; min-height:100vh; background:var(--bg); color:var(--ink); }
+  .presenter h1{ font-family:var(--font-display); font-size:1.6rem; }
+  .presenter .pnotes{ font-size:1.15rem; line-height:1.6; white-space:pre-wrap; }
+  .presenter .pmeta{ font-family:var(--font-mono); color:var(--ink-soft); font-size:.8rem; margin-bottom:.8rem; }
+  .presenter .pnext{ font-family:var(--font-mono); color:var(--gold); margin-top:1.2rem; }
+  .presenter .clock{ font-family:var(--font-mono); font-size:2.4rem; color:var(--gold); }
+
+  @media (max-width:720px){ .compare{ grid-template-columns:1fr; } .grid-cards{ grid-template-columns:1fr 1fr; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+  @media print{
+    @page{ size:landscape; margin:0; }
+    html,body{ background:var(--bg); height:auto; }
+    .stage{ position:static; width:auto; height:auto; display:block; background:none; }
+    .toolbar,.controls,.counter,.mode{ display:none !important; }
+    .deck{ position:static; width:auto; height:auto; box-shadow:none; overflow:visible; display:block; }
+    .gutter{ display:none; }
+    .slide{ display:flex !important; position:relative; inset:auto; width:100%; height:100vh; page-break-after:always; break-after:page; }
+    .print-notes{ display:block !important; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="stage" x-data="deck()" x-init="init()" x-cloak :data-theme="theme"
+     @keydown.window="tasto($event)">
+
+  <div class="toolbar">
+    <button class="tbtn" :class="{on: soloCore}" @click="toggleCore()" x-text="soloCore ? '● SOLO INCONTRO 3 (F)' : '○ DECK COMPLETO (F)'"></button>
+    <button class="tbtn" :class="{on: theme==='light'}" @click="theme = theme==='dark' ? 'light' : 'dark'" x-text="theme==='dark' ? '◐ LIGHT (T)' : '◑ DARK (T)'"></button>
+    <button class="tbtn" @click="toggleFullscreen()">SCHERMO INTERO</button>
+  </div>
+
+  <div class="deck" :class="{'notes-on': notesOn}" role="region" aria-roledescription="presentazione" aria-label="Lab6 · Incontro 3 — Machine learning con Python in classe" :data-theme="theme">
+    <div class="gutter">
+      <span class="idx"><b x-text="String(posizione()).padStart(2,'0')"></b>/<span x-text="String(visibili().length).padStart(2,'0')"></span></span>
+      <div class="rail-line"></div>
+    </div>
+    <div class="frame">
+
+
+    <!-- 00 · COVER · Copertina -->
+    <section class="slide" data-type="cover" x-show="current === 0" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/00-cover.md</p>
+<h1 class="title">Machine learning con Python in classe</h1>
+<p class="subtitle">Come si insegna il ML quando un'IA può scrivere l'intera pipeline al posto dello studente? Non una questione di algoritmi, ma di farli con Python — e di scegliere bene prima e dopo il codice.</p>
+<div class="meta-row"><span>INCONTRO 3 DI 4</span><span>VENERDÌ 2 OTTOBRE</span><span>4 ORE</span></div>
+    </section>
+
+    <!-- 01 · TECNICO · Il programma di oggi -->
+    <section class="slide" data-type="tecnico" x-show="current === 1" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/00/agenda.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Il programma di oggi</h2>
+<table class="tab compatta"><thead><tr><th>Orario</th><th>Blocco</th><th>Dove</th></tr></thead><tbody><tr><td>00:00</td><td>Apertura e provocazione</td><td>Antigravity</td></tr><tr><td>00:10</td><td>Il ML con Python in un'immagine</td><td>slide</td></tr><tr><td>00:30</td><td>Dal CSV al DataFrame: pandas con i funghi</td><td>Colab · 01</td></tr><tr><td>01:00</td><td>Un solo schema, sei modelli</td><td>Colab · 02, 02b</td></tr><tr><td>01:50</td><td>Lo spettro applicato al ML, i sei errori</td><td>Colab · 03</td></tr><tr><td>02:15</td><td>Un notebook per la vostra classe</td><td>Antigravity + Colab</td></tr><tr><td>03:15</td><td>Agenti per il ML · Dati, bias e responsabilità · Chiusura</td><td>Gemini</td></tr></tbody></table>
+<p class="note">Pausa 01:35–01:50 · Link: colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/01_pandas_funghi.ipynb</p>
+    </section>
+
+    <!-- 02 · TECNICO · Provocazione -->
+    <section class="slide" data-type="tecnico" x-show="current === 2" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/01-apertura/provocazione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Una richiesta, dieci secondi</h2>
+<pre class="code-block">Scrivi un notebook Python che carichi ml/dati/mushrooms.csv,
+addestri un classificatore per prevedere la colonna class
+e mi dica quanto è accurato.</pre>
+<p class="body-text">Arriva un notebook funzionante, con un'accuratezza vicina al 100%.</p>
+    </section>
+
+    <!-- 03 · ATTENZIONE · La domanda -->
+    <section class="slide" data-type="attenzione" x-show="current === 3" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/01-apertura/domanda.md</p>
+<p class="quote">Uno studente di quinta che consegna questo notebook, che cosa ha imparato?</p>
+<p class="body-text">E come facciamo a saperlo? Oggi: un modo di insegnare il ML in cui il codice scikit-learn — corto e sempre uguale — è la parte meno importante, e le scelte sui dati e sulla valutazione sono quella che si vede e si valuta.</p>
+    </section>
+
+    <!-- 04 · SCHEMA · Il flusso -->
+    <section class="slide" data-type="schema" x-show="current === 4" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/02-teoria/01-flusso.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Il ML con Python in un'immagine</h2>
+
+<svg class="schema" viewBox="0 0 900 300" role="img" aria-label="Il flusso del machine learning in otto passi: domanda, dati, esplorazione, pulizia, divisione train e test, modello, valutazione, interpretazione. Solo il modello è codice uguale per tutti; gli altri passi sono scelte">
+  <defs><marker id="fm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m"/></marker></defs><rect x="10" y="20" width="190" height="84" rx="4" class="box gold"/><text x="105" y="54" class="t" style="font-size:17px">Domanda</text><text x="105" y="82" class="s" style="font-size:13px">che cosa voglio prevedere?</text><rect x="236" y="20" width="190" height="84" rx="4" class="box gold"/><text x="331" y="54" class="t" style="font-size:17px">Dati</text><text x="331" y="82" class="s" style="font-size:13px">da dove vengono? chi c'è?</text><rect x="462" y="20" width="190" height="84" rx="4" class="box gold"/><text x="557" y="54" class="t" style="font-size:17px">Esplorazione</text><text x="557" y="82" class="s" style="font-size:13px">shape, value_counts, «?»</text><rect x="688" y="20" width="200" height="96" rx="4" class="box gold"/><text x="788" y="54" class="t" style="font-size:17px">Pulizia e</text><text x="788" y="75" class="t" style="font-size:17px">trasformazione</text><text x="788" y="98" class="s" style="font-size:13px">mancanti, one-hot, scaling</text><rect x="688" y="170" width="200" height="96" rx="4" class="box gold"/><text x="788" y="204" class="t" style="font-size:17px">Divisione</text><text x="788" y="225" class="t" style="font-size:17px">train / test</text><text x="788" y="248" class="s" style="font-size:13px">prima di tutto il resto</text><rect x="462" y="170" width="190" height="84" rx="4" class="box link"/><text x="557" y="204" class="t" style="font-size:17px">Modello</text><text x="557" y="232" class="s" style="font-size:13px">fit e predict: 4 righe</text><rect x="236" y="170" width="190" height="84" rx="4" class="box gold"/><text x="331" y="204" class="t" style="font-size:17px">Valutazione</text><text x="331" y="232" class="s" style="font-size:13px">baseline, recall, R²</text><rect x="10" y="170" width="190" height="84" rx="4" class="box gold"/><text x="105" y="204" class="t" style="font-size:17px">Interpretazione</text><text x="105" y="232" class="s" style="font-size:13px">che cosa ho imparato?</text>
+  <line x1="200" y1="62" x2="234" y2="62" class="a" marker-end="url(#fm)"/>
+  <line x1="426" y1="62" x2="460" y2="62" class="a" marker-end="url(#fm)"/>
+  <line x1="652" y1="62" x2="686" y2="62" class="a" marker-end="url(#fm)"/>
+  <line x1="788" y1="116" x2="788" y2="168" class="a" marker-end="url(#fm)"/>
+  <line x1="688" y1="218" x2="654" y2="218" class="a" marker-end="url(#fm)"/>
+  <line x1="462" y1="212" x2="428" y2="212" class="a" marker-end="url(#fm)"/>
+  <line x1="236" y1="212" x2="202" y2="212" class="a" marker-end="url(#fm)"/>
+  <text x="450" y="292" class="c">oro: scelte dello studente · verde acqua: codice uguale per tutti</text>
+</svg>
+    </section>
+
+    <!-- 05 · GRIGLIA · Vocabolario minimo -->
+    <section class="slide" data-type="griglia" x-show="current === 5" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/02-teoria/02-vocabolario.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Sei parole per cominciare</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Esempio</h4><p>Una riga della tabella: un fungo, un cliente, una richiesta di credito.</p></div><div class="grid-card link"><h4>Feature</h4><p>Le colonne che il modello usa per decidere (X).</p></div><div class="grid-card gold"><h4>Target / etichetta</h4><p>La colonna da prevedere (y): commestibile o velenoso.</p></div><div class="grid-card gold"><h4>Modello</h4><p>La regola imparata dagli esempi, che si applica a esempi nuovi.</p></div><div class="grid-card add"><h4>Supervisionato</h4><p>Con etichetta: regressione (un numero) e classificazione (una classe).</p></div><div class="grid-card add"><h4>Non supervisionato</h4><p>Senza etichetta: clustering, cioè trovare gruppi.</p></div></div>
+    </section>
+
+    <!-- 06 · GRIGLIA · Le librerie -->
+    <section class="slide" data-type="griglia" x-show="current === 6" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/02-teoria/03-librerie.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Quattro librerie</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>pandas</h4><p>Tabelle: leggere un CSV, filtrare, contare, trasformare.</p></div><div class="grid-card gold"><h4>NumPy</h4><p>Numeri e vettori: il motore sotto pandas e scikit-learn.</p></div><div class="grid-card add"><h4>matplotlib · seaborn</h4><p>Grafici: dispersione, istogrammi, gomito.</p></div><div class="grid-card del"><h4>scikit-learn</h4><p>Modelli, divisione dei dati, metriche. Sempre con lo stesso schema.</p></div></div>
+<p class="note">In Colab sono già installate: nessun pip install.</p>
+    </section>
+
+    <!-- 07 · TECNICO · Lo schema unico -->
+    <section class="slide" data-type="tecnico" x-show="current === 7" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/02-teoria/04-schema-unico.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Lo schema unico di scikit-learn</h2>
+<pre class="code-block">modello = Algoritmo(parametri)        <span class="cm"># 1. istanzia</span>
+modello.fit(X_train, y_train)         <span class="cm"># 2. addestra</span>
+previsioni = modello.predict(X_test)  <span class="cm"># 3. prevedi</span>
+valuta(y_test, previsioni)            <span class="cm"># 4. valuta: accuratezza, recall, R²…</span></pre>
+<p class="body-text">Cambiando <strong>solo la prima riga</strong> si passa da un algoritmo all'altro: <code>LinearRegression</code>, <code>LogisticRegression</code>, <code>KNeighborsClassifier</code>, <code>DecisionTreeClassifier</code>, <code>SVC</code>, <code>KMeans</code>.</p>
+    </section>
+
+    <!-- 08 · ATTENZIONE · Conseguenza didattica -->
+    <section class="slide" data-type="attenzione" x-show="current === 8" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/02-teoria/05-conseguenza.md</p>
+<p class="quote">Il codice non distingue chi ha capito da chi no.</p>
+<p class="body-text">Lo distinguono le scelte <strong>prima</strong> di quelle quattro righe (dati, divisione, baseline) e <strong>dopo</strong> (interpretazione).</p>
+    </section>
+
+    <!-- 09 · GRIGLIA · Garbage in, garbage out -->
+    <section class="slide" data-type="griglia" x-show="current === 9" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/02-teoria/06-dati.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Garbage in, garbage out</h2>
+<div class="grid-cards"><div class="grid-card del"><h4>Duplicati e refusi</h4><p>La stessa riga due volte; «Milano» e «milano».</p></div><div class="grid-card del"><h4>Mancanti</h4><p>Celle vuote, ma anche mancanti scritti come testo: <code>?</code>, <code>n.d.</code>, <code>-1</code>.</p></div><div class="grid-card gold"><h4>Outlier</h4><p>Valori estremi: errori o casi veri? Si decide guardando.</p></div><div class="grid-card link"><h4>Categorie</h4><p>Testo da trasformare in numeri: one-hot con <code>get_dummies</code>.</p></div><div class="grid-card add"><h4>Scala</h4><p>Colonne con unità diverse: <code>StandardScaler</code> prima di kNN, SVM, k-means.</p></div></div>
+    </section>
+
+    <!-- 10 · CONFRONTO · Dove entra l'IA -->
+    <section class="slide" data-type="confronto" x-show="current === 10" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/02-teoria/07-ia.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Dove entra l'IA</h2>
+<div class="compare"><div class="compare-col del"><h3>Studenti minorenni</h3><ul><li>Colab <strong>senza IA</strong>: le funzioni IA di Colab sono solo 18+</li><li>serve che la scuola abbia abilitato Colab e il consenso</li><li>è un livello 0 gratis: si scrive e si legge il codice da soli</li></ul></div><div class="compare-col add"><h3>Maggiorenni (molti in quinta) e docenti</h3><ul><li>Gemini in Colab e Antigravity generano l'intera pipeline</li><li>la <em>Learn Mode</em> guida passo passo invece di scrivere il codice: uno strumento di livello 1</li><li>servono regole esplicite (patto d'aula)</li></ul></div></div>
+    </section>
+
+    <!-- 11 · CONTENUTO · PRIMM sul notebook -->
+    <section class="slide" data-type="contenuto" x-show="current === 11" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/03-pandas/01-primm.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Prima prevedi, poi esegui</h2>
+<ul class="bullet-list"><li>Notebook <code>01_pandas_funghi.ipynb</code>: 8124 funghi, 22 attributi, la colonna <code>class</code> (e commestibile, p velenoso).</li><li>Prima di ogni cella: la <strong>previsione</strong> nella cella <em>Prevedi</em> (doppio clic per scrivere).</li><li>Si esegue solo quando tutti hanno scritto qualcosa.</li><li>È il modo in cui si propone di farlo con gli studenti: PRIMM, anche sui notebook.</li></ul>
+<p class="note">colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/01_pandas_funghi.ipynb</p>
+    </section>
+
+    <!-- 12 · TECNICO · Le celle, 1-4 -->
+    <section class="slide" data-type="tecnico" x-show="current === 12" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/03-pandas/02-celle-1.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Le celle, con gli output veri (1-4)</h2>
+<table class="tab"><thead><tr><th>Codice</th><th>Previsione da chiedere</th><th>Output</th></tr></thead><tbody><tr><td><code>df.shape</code></td><td>Quante righe e colonne?</td><td><code>(8124, 23)</code></td></tr><tr><td><code>df.head()</code></td><td>Che valori ci saranno?</td><td>solo lettere: servono i metadati del dataset</td></tr><tr><td><code>df[&quot;class&quot;].value_counts()</code></td><td>Classi bilanciate?</td><td><code>e 4208</code>, <code>p 3916</code> → baseline 0,52</td></tr><tr><td><code>df.isnull().sum().sum()</code></td><td>Ci sono mancanti?</td><td><code>0</code> …</td></tr></tbody></table>
+    </section>
+
+    <!-- 13 · TECNICO · Le celle, 5-8 -->
+    <section class="slide" data-type="tecnico" x-show="current === 13" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/03-pandas/03-celle-2.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Le celle, con gli output veri (5-8)</h2>
+<table class="tab"><thead><tr><th>Codice</th><th>Previsione da chiedere</th><th>Output</th></tr></thead><tbody><tr><td><code>(df == &quot;?&quot;).sum()</code></td><td>E adesso?</td><td><code>stalk-root</code>: <strong>2480</strong> valori <code>?</code></td></tr><tr><td><code>df[&quot;veil-type&quot;].value_counts()</code></td><td>Questa colonna serve?</td><td>un solo valore, <code>p</code>, 8124 volte</td></tr><tr><td><code>pd.crosstab(df[&quot;odor&quot;], df[&quot;class&quot;])</code></td><td>L'odore basta?</td><td>tutto separato tranne <code>n</code>: 3408 commestibili, <strong>120 velenosi</strong></td></tr><tr><td><code>pd.get_dummies(…).shape</code></td><td>Quante colonne?</td><td><code>(8124, 117)</code>: da 22 a 117</td></tr></tbody></table>
+    </section>
+
+    <!-- 14 · ATTENZIONE · Il messaggio del blocco -->
+    <section class="slide" data-type="attenzione" x-show="current === 14" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/03-pandas/04-messaggio.md</p>
+<p class="quote">Un notebook generato scrive «nessun valore mancante» e va avanti.</p>
+<p class="body-text">Chi guarda i dati, no. Le celle 4 e 5 sono l'esempio perfetto di che cosa l'IA può sbagliare con sicurezza.</p>
+    </section>
+
+    <!-- 15 · TECNICO · Regressione lineare -->
+    <section class="slide" data-type="tecnico" x-show="current === 15" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/04-modelli/01-regressione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4a · Regressione: vendite e temperatura</h2>
+<pre class="code-block">modello = LinearRegression()
+modello.fit(temperature, vendite)
+modello.intercept_, modello.coef_        <span class="cm"># 56,34   −1,152</span>
+modello.predict([[25]])                  <span class="cm"># ≈ 27,5</span></pre>
+<p class="body-text">Circa 1,15 vendite in meno per ogni grado. E a 60 °C? Il modello prevede vendite <strong>negative</strong>: è l'<strong>extrapolazione</strong>.</p>
+    </section>
+
+    <!-- 16 · TECNICO · Classificazione: lo stesso ciclo -->
+    <section class="slide" data-type="tecnico" x-show="current === 16" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/04-modelli/02-classificazione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4b · Funghi: cinque modelli, stesse righe</h2>
+<pre class="code-block">modelli = {
+    "baseline":         DummyClassifier(strategy="most_frequent"),
+    "logistica":        LogisticRegression(max_iter=1000),
+    "kNN (k=5)":        KNeighborsClassifier(n_neighbors=5),
+    "albero (prof. 3)": DecisionTreeClassifier(max_depth=3, random_state=42),
+    "SVM":              SVC(),
+}
+for nome, m in modelli.items():
+    m.fit(X_train, y_train)
+    print(nome, accuracy_score(y_test, m.predict(X_test)))</pre>
+    </section>
+
+    <!-- 17 · TECNICO · Classificazione: risultati -->
+    <section class="slide" data-type="tecnico" x-show="current === 17" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/04-modelli/03-risultati.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Modelli eccezionali o problema facile?</h2>
+<table class="tab compatta"><thead><tr><th>Modello</th><th>Accuratezza sul test</th></tr></thead><tbody><tr><td>baseline (classe più frequente)</td><td>0,518</td></tr><tr><td>regressione logistica</td><td>0,999</td></tr><tr><td>kNN (k = 5)</td><td>1,000</td></tr><tr><td>albero (profondità 3)</td><td>0,982</td></tr><tr><td>SVM</td><td>1,000</td></tr><tr><td><strong>albero sulla sola colonna <code>odor</code></strong></td><td><strong>0,986</strong></td></tr></tbody></table>
+<p class="body-text">L'albero di profondità 2 chiede per prima cosa <code>odor_n &lt;= 0.50</code>: «ha odore?». Ha scoperto quello che la tabella incrociata ci aveva già detto.</p>
+    </section>
+
+    <!-- 18 · TECNICO · German Credit -->
+    <section class="slide" data-type="tecnico" x-show="current === 18" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/04-modelli/04-german-credit.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4c · La trappola dell'accuratezza</h2>
+<table class="tab compatta"><thead><tr><th>Modello (German Credit, 1000 clienti, 70% «buoni»)</th><th>Accuratezza</th><th>Recall «cattivi»</th></tr></thead><tbody><tr><td>baseline: dice sempre «buono»</td><td>0,700</td><td>0,000</td></tr><tr><td>regressione logistica</td><td>0,775</td><td>0,583</td></tr><tr><td>kNN (k = 5)</td><td>0,760</td><td>0,333</td></tr><tr><td>albero (profondità 4)</td><td><strong>0,675</strong></td><td>0,483</td></tr><tr><td>SVM</td><td>0,785</td><td>0,417</td></tr></tbody></table>
+<p class="note">Notebook 02b · CSV UCI nel repository · split 80/20 stratificato, random_state=42</p>
+    </section>
+
+    <!-- 19 · ATTENZIONE · Rispetto a cosa? -->
+    <section class="slide" data-type="attenzione" x-show="current === 19" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/04-modelli/05-baseline.md</p>
+<p class="quote">«Il mio modello ha il 75%.» Rispetto a cosa?</p>
+<p class="body-text">La domanda che ogni studente deve imparare a farsi: il mio modello batte davvero quello banale? E trova i casi che mi interessano?</p>
+    </section>
+
+    <!-- 20 · SCHEMA · k-means e scaling -->
+    <section class="slide" data-type="schema" x-show="current === 20" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/04-modelli/06-kmeans.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4d · k-means: con e senza scaling</h2>
+
+<svg class="schema" viewBox="0 0 900 250" role="img" aria-label="Stessi dati, due risultati: senza scaling k-means divide per reddito; con StandardScaler ritrova i quattro gruppi">
+  <rect x="10" y="10" width="420" height="200" rx="4" class="box del"/>
+  <rect x="470" y="10" width="420" height="200" rx="4" class="box add"/>
+  <text x="220" y="44" class="t" style="font-size:18px">Senza scaling</text>
+  <text x="680" y="44" class="t" style="font-size:18px">Con StandardScaler</text>
+  <text x="220" y="80" class="s">reddito: deviazione standard 20 400</text>
+  <text x="220" y="102" class="s">età: deviazione standard 15</text>
+  <text x="220" y="140" class="c">la distanza «vede» solo il reddito</text>
+  <text x="220" y="172" class="s">età media dei segmenti sempre tra 38 e 42</text>
+  <text x="680" y="80" class="s">le due colonne pesano allo stesso modo</text>
+  <text x="680" y="140" class="c">i quattro gruppi veri</text>
+  <text x="680" y="172" class="s">giovani e anziani, reddito basso e alto</text>
+  <text x="450" y="240" class="s">Clienti inventati nel notebook (seed fisso): quattro gruppi da 25</text>
+</svg>
+    </section>
+
+    <!-- 21 · TECNICO · Lo spettro applicato al ML -->
+    <section class="slide" data-type="tecnico" x-show="current === 21" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/05-spettro/01-tabella.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Lo stesso classificatore, cinque livelli</h2>
+<table class="tab compatta"><thead><tr><th>Livello</th><th>Attività per la classe</th></tr></thead><tbody><tr><td><span class="liv l0">0</span></td><td>kNN scritto da zero in Python puro; percorrere a mano l'albero stampato con <code>export_text</code></td></tr><tr><td><span class="liv l1">1</span></td><td>Tutor ML (S12): «cos'è l'overfitting?» → riceve domande, non definizioni</td></tr><tr><td><span class="liv l2">2</span></td><td>Data scientist scettico (S11): interroga il notebook su baseline, divisione, metriche</td></tr><tr><td><span class="liv l3">3</span></td><td>«Trova l'errore ML»: un notebook generato dall'IA con un errore da scoprire</td></tr><tr><td><span class="liv l4">4</span></td><td>Notebook generato da una specifica dello studente, commentato cella per cella e difeso all'orale</td></tr></tbody></table>
+    </section>
+
+    <!-- 22 · TECNICO · I sei errori ML -->
+    <section class="slide" data-type="tecnico" x-show="current === 22" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/05-spettro/02-sei-errori.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">I sei errori ML (notebook 03)</h2>
+<table class="tab compatta"><thead><tr><th>#</th><th>Errore</th><th>Il codice «sbagliato» dice</th><th>La verità</th></tr></thead><tbody><tr><td>1</td><td>valutare sul training set</td><td>accuratezza 1,0</td><td>sul test: 0,78</td></tr><tr><td>2</td><td>la colonna da prevedere tra le feature</td><td>accuratezza 1,0</td><td>senza la colonna: 0,812</td></tr><tr><td>3</td><td>nessuna baseline</td><td>«0,78, ottimo»</td><td>baseline 0,676; recall 0,63</td></tr><tr><td>4</td><td>il modello costante come soluzione</td><td>«quasi il 70%»</td><td>recall 0: non trova nessuno</td></tr><tr><td>5</td><td>mancanti nascosti</td><td>«nessun mancante»</td><td>2480 <code>?</code> in <code>stalk-root</code></td></tr><tr><td>6</td><td>k-means senza scaling</td><td>«quattro segmenti»</td><td>solo reddito; con scaling i gruppi veri</td></tr></tbody></table>
+    </section>
+
+    <!-- 23 · CONTENUTO · Come diventa un esercizio -->
+    <section class="slide" data-type="contenuto" x-show="current === 23" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/05-spettro/03-piantatore.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Da errore a esercizio: il piantatore di errori ML (D6)</h2>
+<ol class="step-list"><li>Antigravity genera un notebook «da studente» con <strong>un</strong> errore tra i sei</li><li>più la chiave per il docente</li><li>più un controllo automatico che dimostra l'errore</li><li>Il docente verifica che l'errore sia <strong>uno solo</strong> e che il notebook giri</li></ol>
+    </section>
+
+    <!-- 24 · GRIGLIA · Il vostro notebook -->
+    <section class="slide" data-type="griglia" x-show="current === 24" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/06-notebook/01-percorsi.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Un notebook per la vostra classe, su un branch, con una PR</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>A · guidato</h4><p>Si parte da <code>02_sei_modelli.ipynb</code>: nuovo dataset (German Credit, uno della vostra disciplina, i clienti inventati) e 5 celle PRIMM.</p></div><div class="grid-card gold"><h4>B · semi-guidato</h4><p>Prompt D7: Antigravity scrive un notebook PRIMM su un algoritmo; lo verificate in Colab con la checklist.</p></div><div class="grid-card add"><h4>C · aperto</h4><p>Un set «trova l'errore ML» (D6): tre notebook, chiave, test automatico. Oppure «da zero contro scikit-learn».</p></div></div>
+<p class="note">Il ML nel kit è facoltativo: chi non lo inserisce lo tiene nel proprio repository su un branch.</p>
+    </section>
+
+    <!-- 25 · TECNICO · La checklist del notebook generato -->
+    <section class="slide" data-type="tecnico" x-show="current === 25" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/06-notebook/02-checklist.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Prima di usarlo in classe</h2>
+<table class="tab compatta"><thead><tr><th>Controllo</th><th>Come</th></tr></thead><tbody><tr><td>Tutte le celle girano dall'inizio alla fine</td><td><em>Runtime → Esegui tutto</em> in Colab</td></tr><tr><td>Divisione train/test prima di ogni trasformazione «appresa»</td><td>lettura delle celle</td></tr><tr><td>C'è una baseline</td><td><code>DummyClassifier</code> o <code>DummyRegressor</code></td></tr><tr><td>Solo costrutti Python già visti in classe</td><td>confronto con la regola del workspace</td></tr><tr><td>Le risposte «per il docente» sono corrette</td><td>confronto con l'output reale</td></tr><tr><td>Nessun dato personale reale nel dataset</td><td>lettura delle colonne</td></tr></tbody></table>
+    </section>
+
+    <!-- 26 · ESERCIZIO-GUIDATO · Dal branch a Colab -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 26" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/06-notebook/03-colab.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Dal vostro branch a Colab</h2>
+<ol class="step-list"><li><code>git switch -c notebook-ml</code> nel vostro kit</li><li>Notebook e CSV in <code>ml/</code>; <strong>output cancellati</strong> prima del commit</li><li>Una cella «Da dove vengono questi dati e cosa non possiamo farci»</li><li><code>git push -u origin notebook-ml</code></li><li><code>colab.research.google.com/github/UTENTE/kit-uda-ARGOMENTO/blob/<strong>notebook-ml</strong>/ml/NOME.ipynb</code></li><li>Correzioni, commit piccoli, poi la PR</li></ol>
+    </section>
+
+    <!-- 27 · GRIGLIA · Agenti per il ML -->
+    <section class="slide" data-type="griglia" x-show="current === 27" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/07-agenti/01-s11-s12.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Due agenti per il ML</h2>
+<div class="grid-cards"><div class="grid-card gold"><h4>S11 · Data scientist scettico</h4><p>Con il notebook dell'errore 3 deve chiedere «con cosa hai confrontato 0,78?» senza dare la risposta. Con il notebook corretto riconosce la baseline e passa a un'altra domanda.</p></div><div class="grid-card link"><h4>S12 · Tutor ML</h4><p>Variante del tutor socratico: «cos'è l'overfitting?» → domande sull'albero con accuratezza 1,0 sul training.</p></div><div class="grid-card add"><h4>Confronto</h4><p>Chi ha un account maggiorenne con le funzioni IA di Colab: stessa domanda alla Learn Mode. Che cosa fa meglio un Gem scritto dal docente?</p></div></div>
+    </section>
+
+    <!-- 28 · CONTENUTO · Dati, bias e responsabilità -->
+    <section class="slide" data-type="contenuto" x-show="current === 28" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/08-dati/01-german-credit.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">German Credit: che cosa sta imparando il modello?</h2>
+<ul class="bullet-list"><li>Tra le colonne: <code>personal_status</code> (sesso e stato civile insieme) e <code>foreign_worker</code>.</li><li>Se il modello le usa, che cosa impara? È lecito usarle per decidere un credito?</li><li>Togliendole il problema sparisce? <strong>No</strong>: altre colonne possono farne le veci (proxy: tipo di lavoro, anni di residenza…).</li><li>Regola del laboratorio: nessun modello su dati di persone reali per prendere decisioni, e mai su dati di studenti.</li></ul>
+    </section>
+
+    <!-- 29 · TECNICO · Minimizzazione dei dati -->
+    <section class="slide" data-type="tecnico" x-show="current === 29" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/08-dati/02-minimizzazione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Il primo gesto: togliere ciò che non serve</h2>
+<pre class="code-block">tweet = pd.read_csv("Tweets.csv")      <span class="cm"># 14 640 tweet sulle compagnie aeree</span>
+tweet = tweet.drop(columns=["name"])   <span class="cm"># 7 701 nomi utente reali: non servono</span></pre>
+<p class="body-text">Per una sentiment analysis la colonna <code>name</code> non serve: <strong>minimizzazione dei dati</strong>, prima di tutto il resto. In ogni notebook per la classe, una cella: <em>«Da dove vengono questi dati e cosa non possiamo farci»</em>.</p>
+    </section>
+
+    <!-- 30 · CHIUSURA · Chiusura -->
+    <section class="slide" data-type="chiusura" x-show="current === 30" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 3</span>
+      <p class="path"><b>lab6</b>/incontro-3/fine.md</p>
+<h2 class="title">Tre domande per un notebook da 0,99</h2>
+<p class="body-text">Se uno studente consegna un notebook generato dall'IA con accuratezza 0,99, quali tre domande gli fate all'orale? Le vostre risposte diventano materiale per lunedì.</p>
+<p class="body-text" style="margin-top:1.4rem; color:var(--ink);">Lunedì 5 ottobre (3 ore): valutare quando l'IA c'è, patto d'aula, montaggio del kit, release v1.0, showcase. Nessun compito a casa.</p>
+    </section>
+
+    <!-- 31 · GRIGLIA · Riserva: da zero e a mano -->
+    <section class="slide" data-type="griglia" x-show="current === 31" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/riserva/01-livello-0.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Riserva · livello 0 e dintorni</h2>
+<div class="grid-cards"><div class="grid-card del"><h4>kNN da zero contro scikit-learn · 20 min</h4><p>Notebook <code>04_riserva_knn_da_zero</code>. Funzioni <code>distanza</code> e <code>classifica</code> scritte a mano, poi <code>KNeighborsClassifier</code>: i risultati coincidono? Se no, perché (scaling, parità di voti)?</p></div><div class="grid-card gold"><h4>Albero a mano · 15 min</h4><p>L'albero di profondità 2 dei funghi stampato: cinque funghi descritti a parole da classificare a mano.</p></div><div class="grid-card link"><h4>SVM e iperpiano · 15 min</h4><p>Notebook <code>05_riserva_svm</code>. Due feature, <code>kernel=&quot;linear&quot;</code> e <code>&quot;rbf&quot;</code>, il confine disegnato; che cosa cambia con <code>C</code>.</p></div></div>
+    </section>
+
+    <!-- 32 · GRIGLIA · Riserva: testo e clienti -->
+    <section class="slide" data-type="griglia" x-show="current === 32" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-3/ml/riserva/02-altri-dati.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Riserva · altri dati</h2>
+<div class="grid-cards"><div class="grid-card add"><h4>Sentiment in dieci righe · 20 min</h4><p><code>Tweets.csv</code> senza <code>name</code>, <code>CountVectorizer</code> + <code>LogisticRegression</code>, baseline sulla classe più frequente. Che cosa «capisce» il modello di una frase?</p></div><div class="grid-card gold"><h4>Mall Customers · 10 min</h4><p>Reddito annuo e punteggio di spesa di 200 clienti: gomito e segmenti. Numeri da verificare in Colab prima di usarlo.</p></div></div>
+    </section>
+
+      <p class="mode" x-show="soloCore">solo incontro 3</p>
+      <p class="counter" x-text="String(posizione()).padStart(2,'0') + ' / ' + String(visibili().length).padStart(2,'0')"></p>
+      <div class="controls">
+        <button class="nav-btn" @click="prev()" aria-label="Slide precedente">‹</button>
+        <div class="rail" role="tablist" aria-label="Naviga tra le slide">
+          <template x-for="i in visibili()" :key="i">
+            <button class="rail-dot" :class="{active: current === i, core: slides[i].core}" @click="goto(i)" role="tab" :aria-selected="current === i" :aria-label="slides[i].label"></button>
+          </template>
+        </div>
+        <button class="nav-btn" @click="next()" aria-label="Slide successiva">›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="presenter" x-data="relatore()" x-init="init()" :data-theme="'dark'" data-theme="dark">
+  <div>
+    <p class="pmeta" x-text="'Slide ' + (current+1) + ' di ' + slides.length"></p>
+    <h1 x-text="slides[current] ? slides[current].label : ''"></h1>
+    <p class="pnotes" x-text="slides[current] ? (slides[current].notes || '—') : ''"></p>
+    <p class="pnext" x-text="'Prossima: ' + (slides[current+1] ? slides[current+1].label : 'fine')"></p>
+  </div>
+  <div>
+    <p class="clock" x-text="orologio"></p>
+    <p class="pmeta" style="margin-top:1rem">Frecce o spazio in questa finestra per avanzare: la presentazione segue.</p>
+  </div>
+</div>
+
+<script>
+  const SLIDES = [{"type": "cover", "label": "Copertina", "core": true, "notes": ""}, {"type": "tecnico", "label": "Il programma di oggi", "core": true, "notes": ""}, {"type": "tecnico", "label": "Provocazione", "core": true, "notes": ""}, {"type": "attenzione", "label": "La domanda", "core": true, "notes": ""}, {"type": "schema", "label": "Il flusso", "core": true, "notes": ""}, {"type": "griglia", "label": "Vocabolario minimo", "core": true, "notes": ""}, {"type": "griglia", "label": "Le librerie", "core": true, "notes": ""}, {"type": "tecnico", "label": "Lo schema unico", "core": true, "notes": ""}, {"type": "attenzione", "label": "Conseguenza didattica", "core": true, "notes": ""}, {"type": "griglia", "label": "Garbage in, garbage out", "core": true, "notes": ""}, {"type": "confronto", "label": "Dove entra l'IA", "core": true, "notes": ""}, {"type": "contenuto", "label": "PRIMM sul notebook", "core": true, "notes": ""}, {"type": "tecnico", "label": "Le celle, 1-4", "core": true, "notes": ""}, {"type": "tecnico", "label": "Le celle, 5-8", "core": true, "notes": ""}, {"type": "attenzione", "label": "Il messaggio del blocco", "core": true, "notes": ""}, {"type": "tecnico", "label": "Regressione lineare", "core": true, "notes": ""}, {"type": "tecnico", "label": "Classificazione: lo stesso ciclo", "core": true, "notes": ""}, {"type": "tecnico", "label": "Classificazione: risultati", "core": true, "notes": ""}, {"type": "tecnico", "label": "German Credit", "core": true, "notes": ""}, {"type": "attenzione", "label": "Rispetto a cosa?", "core": true, "notes": ""}, {"type": "schema", "label": "k-means e scaling", "core": true, "notes": ""}, {"type": "tecnico", "label": "Lo spettro applicato al ML", "core": true, "notes": ""}, {"type": "tecnico", "label": "I sei errori ML", "core": true, "notes": ""}, {"type": "contenuto", "label": "Come diventa un esercizio", "core": true, "notes": ""}, {"type": "griglia", "label": "Il vostro notebook", "core": true, "notes": ""}, {"type": "tecnico", "label": "La checklist del notebook generato", "core": true, "notes": ""}, {"type": "esercizio-guidato", "label": "Dal branch a Colab", "core": true, "notes": ""}, {"type": "griglia", "label": "Agenti per il ML", "core": true, "notes": ""}, {"type": "contenuto", "label": "Dati, bias e responsabilità", "core": true, "notes": ""}, {"type": "tecnico", "label": "Minimizzazione dei dati", "core": true, "notes": ""}, {"type": "chiusura", "label": "Chiusura", "core": true, "notes": ""}, {"type": "griglia", "label": "Riserva: da zero e a mano", "core": false, "notes": ""}, {"type": "griglia", "label": "Riserva: testo e clienti", "core": false, "notes": ""}];
+  const canale = ('BroadcastChannel' in window) ? new BroadcastChannel('lab6-inc3') : null;
+  const PRESENTER = new URLSearchParams(location.search).has('relatore');
+  if (PRESENTER) document.body.classList.add('is-presenter');
+
+  function deck(){
+    return {
+      current: 0, notesOn: false, theme: 'dark', soloCore: false, slides: SLIDES,
+      init(){
+        if (canale) canale.onmessage = (e) => { if (e.data && typeof e.data.goto === 'number') this.current = e.data.goto; };
+      },
+      visibili(){ return this.slides.map((s,i) => i).filter(i => !this.soloCore || this.slides[i].core); },
+      posizione(){ return this.visibili().indexOf(this.current) + 1; },
+      annuncia(){ if (canale && !PRESENTER) canale.postMessage({ stato: this.current }); },
+      next(){ const v = this.visibili(); const p = v.indexOf(this.current); if (p < v.length - 1) { this.current = v[p+1]; this.annuncia(); } },
+      prev(){ const v = this.visibili(); const p = v.indexOf(this.current); if (p > 0) { this.current = v[p-1]; this.annuncia(); } },
+      goto(i){ this.current = i; this.annuncia(); },
+      toggleCore(){
+        this.soloCore = !this.soloCore;
+        if (this.soloCore && !this.slides[this.current].core) {
+          const succ = this.visibili().find(i => i > this.current);
+          this.current = succ !== undefined ? succ : this.visibili()[0];
+        }
+      },
+      tasto(e){
+        if (PRESENTER) return;
+        const k = e.key;
+        if (k === 'ArrowRight' || k === ' ' || k === 'PageDown'){ this.next(); e.preventDefault(); }
+        else if (k === 'ArrowLeft' || k === 'PageUp'){ this.prev(); }
+        else if (k === 'f' || k === 'F'){ this.toggleCore(); }
+        
+        else if (k === 't' || k === 'T'){ this.theme = this.theme === 'dark' ? 'light' : 'dark'; }
+        
+      },
+      apriRelatore(){ window.open(location.pathname + '?relatore=1', 'relatore', 'width=1100,height=700'); setTimeout(() => this.annuncia(), 800); },
+      toggleFullscreen(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+    }
+  }
+
+  function relatore(){
+    return {
+      current: 0, slides: SLIDES, orologio: '00:00', t0: Date.now(),
+      init(){
+        if (!PRESENTER) return;
+        if (canale) canale.onmessage = (e) => { if (e.data && typeof e.data.stato === 'number') this.current = e.data.stato; };
+        setInterval(() => { const s = Math.floor((Date.now() - this.t0) / 1000); this.orologio = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }, 1000);
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight' || e.key === ' ') { this.vai(this.current + 1); e.preventDefault(); }
+          if (e.key === 'ArrowLeft') this.vai(this.current - 1);
+        });
+      },
+      vai(i){ if (i < 0 || i >= this.slides.length) return; this.current = i; if (canale) canale.postMessage({ goto: i }); }
+    }
+  }
+</script>
+</body>
+</html>
