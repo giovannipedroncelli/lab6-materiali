@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab6 · Materiali per i corsisti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#F1F0EA; --surface:#E7E3D6; --ink:#1B1D1F; --soft:#5B5F5A; --rule:#D3CFBF; --gold:#8C5F19; --link:#1F6F6B; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#14161A; --surface:#1D2025; --ink:#ECE9E1; --soft:#9CA3A8; --rule:#2C3036; --gold:#E8C177; --link:#6FB8B2; } }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; line-height:1.55; }
+  main{ max-width:52rem; margin:0 auto; padding:2.5rem 16px 4rem; }
+  .path{ font-family:'IBM Plex Mono',monospace; font-size:.8rem; color:var(--soft); } .path b{ color:var(--gold); font-weight:400; }
+  h1{ font-family:'Fraunces',serif; font-size:clamp(1.8rem,5vw,2.6rem); line-height:1.1; margin:.4rem 0 1rem; }
+  h2{ font-family:'Fraunces',serif; font-size:1.35rem; margin:2.2rem 0 .6rem; }
+  a{ color:var(--link); } .dopo{ color:var(--soft); font-size:.9rem; }
+  table{ width:100%; border-collapse:collapse; font-size:.95rem; }
+  th{ text-align:left; font-family:'IBM Plex Mono',monospace; font-size:.72rem; text-transform:uppercase; color:var(--soft); border-bottom:2px solid var(--gold); padding:.4rem; }
+  td{ border-bottom:1px solid var(--rule); padding:.5rem .4rem; vertical-align:top; }
+  li{ margin:.3rem 0; } code{ font-family:'IBM Plex Mono',monospace; background:var(--surface); padding:0 .3em; }
+  .nota{ color:var(--soft); font-size:.9rem; }
+  @media (max-width:560px){ td:nth-child(2){ display:none; } th:nth-child(2){ display:none; } }
+</style>
+</head>
+<body>
+<main>
+<p class="path"><b>lab6</b>/materiali-corsisti</p>
+<h1>Programmazione e coding con l'IA: approccio responsabile</h1>
+<p>Laboratorio Lab6 per docenti di informatica: quattro incontri, un kit per una vostra unità di apprendimento, pubblicato su GitHub.</p>
+
+<h2>Gli incontri</h2>
+<table><thead><tr><th>#</th><th>Data</th><th>Tema</th><th></th></tr></thead><tbody>
+<tr><td>1</td><td>martedì 29 settembre</td><td>Insegnare a programmare quando la macchina programma</td><td><a href="slide/Incontro1.html">Slide</a></td></tr><tr><td>2</td><td>giovedì 1 ottobre</td><td>Git, Antigravity e il docente autore</td><td><a href="slide/Incontro2.html">Slide</a></td></tr><tr><td>3</td><td>venerdì 2 ottobre</td><td>Machine learning con Python in classe</td><td><span class="dopo">Slide dopo l'incontro</span></td></tr><tr><td>4</td><td>lunedì 5 ottobre</td><td>Valutare, regolare, consegnare</td><td><span class="dopo">Slide dopo l'incontro</span></td></tr>
+</tbody></table>
+<p class="nota">Nelle slide: frecce per navigare, T per il tema chiaro o scuro, F per nascondere le slide di riserva.</p>
+
+<h2>Da usare durante il laboratorio</h2>
+<ul>
+<li><a href="https://github.com/giovannipedroncelli/kit-uda-template">Template del kit</a>: <em>Use this template</em> → il vostro <code>kit-uda-&lt;argomento&gt;</code></li>
+<li><a href="https://github.com/giovannipedroncelli/repo-demo-formatore">Repository dimostrativo</a> «Liste e cicli: gli scontrini del negozio»</li>
+<li><a href="dispense/Lab6_Dispense_Corsisti.pdf">Dispense D1-D17</a> (PDF)</li>
+<li><a href="https://learngitbranching.js.org/?locale=it_IT">Learn Git Branching</a>, per il modello mentale di Git</li>
+</ul>
+<h2>Notebook dell'Incontro 3</h2><p>Si aprono in Colab direttamente dal repository dimostrativo.</p><ul><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/01_pandas_funghi.ipynb">01_pandas_funghi</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/02_sei_modelli.ipynb">02_sei_modelli</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/02b_baseline_credito.ipynb">02b_baseline_credito</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/03_errori_ml.ipynb">03_errori_ml</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/04_riserva_knn_da_zero.ipynb">04_riserva_knn_da_zero</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/05_riserva_svm.ipynb">05_riserva_svm</a></li></ul>
+<h2>Licenza</h2>
+<p class="nota">Materiali didattici: CC BY 4.0 · Codice: MIT. Nessun dato personale di studenti in questi materiali.</p>
+</main>
+</body>
+</html>

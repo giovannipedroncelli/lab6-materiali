@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab6 · Incontro 2 — Git e GitHub, dalle fondamenta</title>
+
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js"></script>
+
+<style>
+  :root{ --font-display:'Fraunces', serif; --font-body:'Inter', sans-serif; --font-mono:'IBM Plex Mono', monospace; }
+  [data-theme="dark"]{
+    --bg:#14161A; --surface:#1D2025; --surface-2:#24272D; --ink:#ECE9E1; --ink-soft:#9CA3A8; --rule:#2C3036;
+    --gold:#E8C177; --gold-soft:#4A4331; --add:#7FBE8F; --add-soft:rgba(127,190,143,.16);
+    --del:#DE8B85; --del-soft:rgba(194,85,74,.22); --link:#6FB8B2; --link-soft:#263936; --canvas:#0F1013;
+  }
+  [data-theme="light"]{
+    --bg:#F1F0EA; --surface:#E7E3D6; --surface-2:#DEDACC; --ink:#1B1D1F; --ink-soft:#5B5F5A; --rule:#D3CFBF;
+    --gold:#8C5F19; --gold-soft:#EEDFB9; --add:#3F7A4E; --add-soft:#DCEBDD;
+    --del:#A23F3A; --del-soft:#F0DAD8; --link:#1F6F6B; --link-soft:#D9E6E4; --canvas:#08090A;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  [x-cloak]{ display:none !important; }
+  html,body{ height:100%; background:var(--canvas); font-family:var(--font-body); color:var(--ink); }
+  code{ font-family:var(--font-mono); font-size:.92em; background:var(--surface); padding:.05em .3em; border-radius:2px; }
+
+  .stage{ position:relative; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--canvas); }
+  .deck{ position:relative; background:var(--bg); width:min(100vw, calc(100vh * 16 / 9)); height:min(100vh, calc(100vw * 9 / 16));
+         box-shadow:0 40px 100px rgba(0,0,0,.5); overflow:hidden; display:flex; transition:background .25s ease; }
+
+  .gutter{ flex:0 0 3.4rem; height:100%; border-right:1px solid var(--rule); display:flex; flex-direction:column; align-items:center; padding-top:clamp(1.6rem,3.5vw,2.6rem); position:relative; }
+  .gutter .idx{ font-family:var(--font-mono); font-size:.74rem; color:var(--ink-soft); }
+  .gutter .idx b{ color:var(--gold); font-weight:500; }
+  .gutter .rail-line{ position:absolute; top:4.4rem; bottom:2rem; left:50%; width:1px; background:var(--rule); }
+
+  .frame{ position:relative; flex:1; height:100%; }
+  .slide{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:clamp(1.8rem,4.2vw,3.6rem); padding-bottom:3.6rem; overflow:hidden; }
+
+  .badge{ position:absolute; top:1.15rem; left:clamp(1.8rem,4.2vw,3.6rem); font-family:var(--font-mono); font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; }
+  .badge.core{ color:var(--add); } .badge.extra{ color:var(--ink-soft); }
+
+  .path{ font-family:var(--font-mono); font-size:clamp(.62rem,.95vw,.74rem); letter-spacing:.02em; color:var(--ink-soft); margin-bottom:1rem; }
+  .path b{ color:var(--gold); font-weight:500; }
+  .title{ font-family:var(--font-display); font-weight:600; font-optical-sizing:auto; line-height:1.05; color:var(--ink); font-size:clamp(1.5rem,3.3vw,2.7rem); max-width:26ch; }
+  .subtitle{ color:var(--ink-soft); font-size:clamp(.92rem,1.4vw,1.15rem); max-width:52ch; margin-top:1rem; line-height:1.55; }
+  .body-text{ font-size:clamp(.9rem,1.3vw,1.1rem); color:var(--ink-soft); line-height:1.6; max-width:72ch; margin-top:1.1rem; }
+  .body-text strong{ color:var(--ink); }
+  .meta-row{ font-family:var(--font-mono); font-size:clamp(.6rem,.9vw,.74rem); color:var(--ink-soft); margin-top:1.8rem; display:flex; gap:1.3rem; flex-wrap:wrap; }
+  .meta-row span{ padding-left:1.3rem; position:relative; } .meta-row span:first-child{ padding-left:0; }
+  .meta-row span:not(:first-child)::before{ content:"·"; position:absolute; left:.4rem; color:var(--rule); }
+
+  .slide[data-type="cover"] .title{ max-width:16ch; font-size:clamp(1.9rem,4.2vw,3.4rem); }
+  .slide[data-type="cover"] .path{ color:var(--gold); }
+
+  .agenda-list{ list-style:none; margin-top:1.5rem; max-width:60ch; }
+  .agenda-list li{ position:relative; padding:.45rem 0 .45rem 2.1rem; font-size:clamp(.86rem,1.25vw,1.02rem); color:var(--ink); }
+  .agenda-list li::before{ content:attr(data-n); position:absolute; left:0; top:.45rem; font-family:var(--font-mono); font-size:.68rem; color:var(--bg); background:var(--link);
+    width:1.4rem; height:1.4rem; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .agenda-list li:not(:last-child)::after{ content:""; position:absolute; left:.69rem; top:1.95rem; height:calc(100% - 1.1rem); width:1px; background:var(--rule); }
+
+  .bullet-list{ list-style:none; margin-top:1.4rem; max-width:70ch; }
+  .bullet-list li{ position:relative; padding:.42rem 0 .42rem 1.5rem; font-size:clamp(.92rem,1.4vw,1.14rem); color:var(--ink); line-height:1.5; }
+  .bullet-list li::before{ content:"›"; position:absolute; left:0; top:.38rem; font-family:var(--font-mono); color:var(--gold); font-size:1rem; }
+
+  .slide[data-type="definizione"] .deflabel{ font-family:var(--font-display); font-weight:600; font-size:clamp(1.4rem,2.8vw,2.2rem); color:var(--gold); }
+  .defbox{ margin-top:1.4rem; border-left:2px solid var(--gold); background:var(--gold-soft); padding:1.1rem 1.4rem; max-width:74ch;
+           font-size:clamp(.9rem,1.3vw,1.08rem); color:var(--ink); line-height:1.65; }
+  .defbox code{ background:transparent; }
+
+  .compare{ margin-top:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; max-width:100%; }
+  .compare-col{ border-top:2px solid var(--rule); padding-top:.8rem; }
+  .compare-col.del{ border-top-color:var(--del); } .compare-col.add{ border-top-color:var(--add); } .compare-col.link{ border-top-color:var(--link); }
+  .compare-col h3{ font-family:var(--font-mono); font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:.6rem; }
+  .compare-col.del h3{ color:var(--del); } .compare-col.add h3{ color:var(--add); } .compare-col.link h3{ color:var(--link); }
+  .compare-col ul{ padding-left:1.1rem; color:var(--ink); font-size:clamp(.9rem,1.3vw,1.08rem); line-height:1.6; }
+
+  .step-list{ list-style:none; margin-top:1.4rem; max-width:64ch; counter-reset:step; }
+  .step-list li{ counter-increment:step; position:relative; padding:.45rem 0 .45rem 2.5rem; font-size:clamp(.92rem,1.35vw,1.12rem); color:var(--ink); line-height:1.5; }
+  .step-list li::before{ content:counter(step); position:absolute; left:0; top:.32rem; font-family:var(--font-mono); font-weight:500; font-size:.8rem; color:var(--link);
+    border:1px solid var(--link); width:1.6rem; height:1.6rem; border-radius:3px; display:flex; align-items:center; justify-content:center; }
+  .note{ margin-top:1.1rem; font-family:var(--font-mono); font-size:clamp(.68rem,1vw,.82rem); color:var(--ink-soft); max-width:100%; line-height:1.5; }
+
+  .code-block{ margin-top:1.2rem; background:var(--surface); border:1px solid var(--rule); color:var(--ink); font-family:var(--font-mono);
+               font-size:clamp(.72rem,1.15vw,.98rem); padding:1rem 1.4rem; max-width:100%; line-height:1.6; overflow:auto; white-space:pre; }
+  .code-block .cm{ color:var(--ink-soft); } .code-block .op{ color:var(--gold); }
+  .code-block .k-del{ color:var(--del); font-weight:600; } .code-block .k-add{ color:var(--add); font-weight:600; } .code-block .k-mid{ color:var(--gold); font-weight:600; }
+
+  .tab{ margin-top:1.2rem; border-collapse:collapse; max-width:100%; width:100%; font-size:clamp(.8rem,1.2vw,1.02rem); }
+  .tab th{ text-align:left; font-family:var(--font-mono); font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);
+           border-bottom:2px solid var(--gold); padding:.4rem .6rem; }
+  .tab td{ border-bottom:1px solid var(--rule); padding:.42rem .6rem; color:var(--ink); vertical-align:top; line-height:1.45; }
+
+  .slide[data-type="attenzione"]{ background:var(--canvas); }
+  .slide[data-type="attenzione"] .path{ color:var(--gold); }
+  .slide[data-type="attenzione"] .quote{ font-family:var(--font-display); font-weight:600; font-style:italic; color:#F4F1E9; font-size:clamp(1.4rem,3.2vw,2.5rem); max-width:22ch; line-height:1.18; }
+  .slide[data-type="attenzione"] .body-text{ color:#A9A497; }
+
+  .slide[data-type="riepilogo"] .bullet-list li::before{ color:var(--add); content:"✓"; font-size:.85rem; top:.48rem; }
+  .slide[data-type="chiusura"] .title{ color:var(--gold); }
+
+  .cycle{ position:relative; width:min(38vw,21rem); aspect-ratio:1/1; margin:1rem auto 0; }
+  .cycle svg.ring circle{ fill:none; stroke:var(--rule); stroke-width:1.5; stroke-dasharray:2 6; }
+  .cycle svg.ring{ position:absolute; inset:0; overflow:visible; }
+  .cycle-node{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:.3rem; width:7rem; text-align:center; }
+  .cycle-node .dot{ width:2.2rem; height:2.2rem; border-radius:50%; background:var(--bg); border:1.5px solid var(--link); display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:.72rem; color:var(--link); }
+  .cycle-node.current .dot{ background:var(--gold); border-color:var(--gold); color:var(--bg); }
+  .cycle-node span.label{ font-size:.74rem; color:var(--ink); line-height:1.2; background:var(--bg); }
+  .cycle-caption{ margin-top:1rem; font-family:var(--font-mono); font-size:.7rem; color:var(--ink-soft); text-align:center; }
+
+  .diff-file{ margin-top:1.4rem; display:flex; align-items:center; gap:.6rem; font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft); }
+  .diff-file .dot{ width:.5rem; height:.5rem; border-radius:50%; } .diff-file .dot.add{ background:var(--add); } .diff-file .dot.del{ background:var(--del); margin-left:.8rem; }
+  .diff-block{ margin-top:.6rem; max-width:72ch; font-family:var(--font-mono); font-size:clamp(.72rem,1.05vw,.88rem); line-height:1.7; background:var(--surface); border:1px solid var(--rule); padding:.9rem 0; overflow-x:auto; }
+  .diff-line{ padding:.08rem 1.3rem; white-space:pre; color:var(--ink-soft); }
+  .diff-line.add{ background:var(--add-soft); color:var(--ink); } .diff-line.add::before{ content:"+ "; color:var(--add); }
+  .diff-line.del{ background:var(--del-soft); color:var(--ink-soft); text-decoration:line-through; text-decoration-color:var(--del); } .diff-line.del::before{ content:"- "; color:var(--del); }
+  .diff-line.ctx::before{ content:"  "; }
+
+  .grid-cards{ margin-top:1.4rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(12rem,1fr)); gap:1.2rem 1.8rem; max-width:100%; }
+  .grid-card{ border-top:2px solid var(--rule); padding-top:.55rem; }
+  .grid-card.gold{ border-top-color:var(--gold); } .grid-card.link{ border-top-color:var(--link); } .grid-card.del{ border-top-color:var(--del); } .grid-card.add{ border-top-color:var(--add); }
+  .grid-card h4{ font-family:var(--font-mono); font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink); margin-bottom:.3rem; }
+  .grid-card p{ font-size:clamp(.82rem,1.22vw,1rem); color:var(--ink-soft); line-height:1.45; }
+  .grid-card p code{ font-size:.85em; }
+
+  /* ---- schema: SVG che eredita i colori del tema ---- */
+  svg.schema{ width:100%; max-width:100%; height:auto; margin-top:1rem; overflow:visible; }
+  svg.schema .box{ fill:var(--surface); stroke:var(--rule); stroke-width:1.5; }
+  svg.schema .box.gold{ stroke:var(--gold); } svg.schema .box.link{ stroke:var(--link); } svg.schema .box.add{ stroke:var(--add); }
+  svg.schema .t{ fill:var(--ink); font-family:var(--font-display); font-weight:600; font-size:22px; text-anchor:middle; }
+  svg.schema .s{ fill:var(--ink-soft); font-family:var(--font-body); font-size:14px; text-anchor:middle; }
+  svg.schema .c{ fill:var(--gold); font-family:var(--font-mono); font-size:14px; text-anchor:middle; }
+  svg.schema .a{ stroke:var(--gold); stroke-width:2; fill:none; } svg.schema .a.back{ stroke:var(--link); stroke-dasharray:6 5; }
+  svg.schema .m{ fill:var(--gold); }
+  svg.schema .l{ stroke-width:3; fill:none; } svg.schema .l.main{ stroke:var(--link); } svg.schema .l.br{ stroke:var(--gold); }
+  svg.schema .n{ fill:var(--bg); stroke:var(--link); stroke-width:3; } svg.schema .n.b{ stroke:var(--gold); } svg.schema .n.m{ fill:var(--add); stroke:var(--add); }
+  svg.schema .lab{ fill:var(--link); font-family:var(--font-mono); font-size:16px; } svg.schema .lab.b{ fill:var(--gold); }
+
+  .print-notes{ display:none; margin-top:1.1rem; padding-top:.8rem; border-top:1px dashed var(--rule); font-family:var(--font-mono); font-size:.7rem; color:var(--ink-soft); max-width:80ch; line-height:1.55; }
+  .notes-on .print-notes{ display:block; }
+  .print-notes .notes-label{ display:block; text-transform:uppercase; letter-spacing:.08em; color:var(--gold); margin-bottom:.3rem; font-size:.62rem; }
+
+  .toolbar{ position:absolute; top:1rem; right:1rem; display:flex; gap:.4rem; z-index:5; flex-wrap:wrap; justify-content:flex-end; }
+  .tbtn{ font-family:var(--font-mono); font-size:.62rem; letter-spacing:.05em; background:var(--surface); border:1px solid var(--rule); color:var(--ink-soft); padding:.36rem .6rem; cursor:pointer; border-radius:2px; }
+  .tbtn:hover{ color:var(--ink); border-color:var(--ink-soft); }
+  .tbtn.on{ color:var(--bg); background:var(--gold); border-color:var(--gold); }
+  .tbtn:focus-visible, .nav-btn:focus-visible, .rail-dot:focus-visible{ outline:2px solid var(--link); outline-offset:2px; }
+
+  .controls{ position:absolute; left:0; right:0; bottom:.9rem; display:flex; align-items:center; justify-content:center; gap:.8rem; pointer-events:none; }
+  .controls > *{ pointer-events:auto; }
+  .nav-btn{ width:1.9rem; height:1.9rem; border-radius:50%; border:1px solid var(--rule); background:var(--surface); color:var(--ink-soft); font-family:var(--font-mono); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .nav-btn:hover{ border-color:var(--link); color:var(--link); }
+  .rail{ display:flex; align-items:center; gap:.32rem; padding:.28rem .7rem; background:var(--surface); border:1px solid var(--rule); border-radius:999px; max-width:70%; flex-wrap:wrap; justify-content:center; }
+  .rail-dot{ width:.38rem; height:.38rem; border-radius:50%; background:transparent; border:1.2px solid var(--ink-soft); cursor:pointer; }
+  .rail-dot.core{ border-color:var(--add); }
+  .rail-dot.active{ background:var(--link); border-color:var(--link); width:.54rem; height:.54rem; }
+  .counter{ font-family:var(--font-mono); font-size:.66rem; color:var(--ink-soft); position:absolute; right:1.1rem; bottom:1.1rem; }
+  .mode{ font-family:var(--font-mono); font-size:.6rem; color:var(--add); position:absolute; left:1rem; bottom:1.1rem; text-transform:uppercase; letter-spacing:.06em; }
+
+  /* ---- vista relatore ---- */
+  .presenter{ display:none; }
+  body.is-presenter .stage{ display:none; }
+  body.is-presenter .presenter{ display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; padding:1.5rem; min-height:100vh; background:var(--bg); color:var(--ink); }
+  .presenter h1{ font-family:var(--font-display); font-size:1.6rem; }
+  .presenter .pnotes{ font-size:1.15rem; line-height:1.6; white-space:pre-wrap; }
+  .presenter .pmeta{ font-family:var(--font-mono); color:var(--ink-soft); font-size:.8rem; margin-bottom:.8rem; }
+  .presenter .pnext{ font-family:var(--font-mono); color:var(--gold); margin-top:1.2rem; }
+  .presenter .clock{ font-family:var(--font-mono); font-size:2.4rem; color:var(--gold); }
+
+  @media (max-width:720px){ .compare{ grid-template-columns:1fr; } .grid-cards{ grid-template-columns:1fr 1fr; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+  @media print{
+    @page{ size:landscape; margin:0; }
+    html,body{ background:var(--bg); height:auto; }
+    .stage{ position:static; width:auto; height:auto; display:block; background:none; }
+    .toolbar,.controls,.counter,.mode{ display:none !important; }
+    .deck{ position:static; width:auto; height:auto; box-shadow:none; overflow:visible; display:block; }
+    .gutter{ display:none; }
+    .slide{ display:flex !important; position:relative; inset:auto; width:100%; height:100vh; page-break-after:always; break-after:page; }
+    .print-notes{ display:block !important; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="stage" x-data="deck()" x-init="init()" x-cloak :data-theme="theme"
+     @keydown.window="tasto($event)">
+
+  <div class="toolbar">
+    <button class="tbtn" :class="{on: soloCore}" @click="toggleCore()" x-text="soloCore ? '● SOLO INCONTRO 2 (F)' : '○ DECK COMPLETO (F)'"></button>
+    <button class="tbtn" :class="{on: theme==='light'}" @click="theme = theme==='dark' ? 'light' : 'dark'" x-text="theme==='dark' ? '◐ LIGHT (T)' : '◑ DARK (T)'"></button>
+    <button class="tbtn" @click="toggleFullscreen()">SCHERMO INTERO</button>
+  </div>
+
+  <div class="deck" :class="{'notes-on': notesOn}" role="region" aria-roledescription="presentazione" aria-label="Lab6 — Incontro 2, Git e GitHub" :data-theme="theme">
+    <div class="gutter">
+      <span class="idx"><b x-text="String(posizione()).padStart(2,'0')"></b>/<span x-text="String(visibili().length).padStart(2,'0')"></span></span>
+      <div class="rail-line"></div>
+    </div>
+    <div class="frame">
+
+
+    <!-- 00 · COVER · Copertina -->
+    <section class="slide" data-type="cover" x-show="current === 0" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/00-cover.md</p>
+<h1 class="title">Git e GitHub, dalle fondamenta</h1>
+<p class="subtitle">Versionare il proprio lavoro, collaborare con le pull request, pubblicare e automatizzare. Per il docente e per la classe.</p>
+<div class="meta-row"><span>INCONTRO 2 DI 4</span><span>DOCENTI DI INFORMATICA</span><span>ISTITUTO TECNICO ECONOMICO</span></div>
+    </section>
+
+    <!-- 01 · AGENDA · Mappa del deck -->
+    <section class="slide" data-type="agenda" x-show="current === 1" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/00/agenda.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Mappa del deck</h2>
+<ol class="agenda-list">
+<li data-n="1">Controllo di versione e Git: tre aree, commit, branch, conflitti, remoti</li>
+<li data-n="2">GitHub: repository, GitHub Flow, accesso sicuro</li>
+<li data-n="3">Collaborare: issue, pull request, revisione, Markdown</li>
+<li data-n="4">Pubblicare e automatizzare: Pages, Actions, Copilot, Codespaces</li>
+<li data-n="5">Organizzare e proteggere: Projects, permessi, sicurezza</li>
+<li data-n="6">Git per la classe e con gli agenti IA</li>
+</ol>
+<p class="note">● = slide dell'Incontro 2 · ○ = approfondimento (tasto F per filtrare)</p>
+    </section>
+
+    <!-- 02 · CONTENUTO · Perché il controllo di versione -->
+    <section class="slide" data-type="contenuto" x-show="current === 2" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/01-perche.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Perché un sistema di controllo di versione</h2>
+<ul class="bullet-list"><li>Registra <strong>ogni modifica</strong> ai file di un progetto: chi, quando, cosa e perché.</li><li>Permette di <strong>tornare indietro</strong> a una versione precedente senza copie <code>finale_v2_DEFINITIVO.py</code>.</li><li>Permette a più persone di lavorare <strong>in parallelo</strong> sugli stessi file e di unire il lavoro.</li><li>Con l'IA diventa indispensabile: si genera molto e in fretta, serve vedere <strong>cosa è cambiato</strong>.</li></ul>
+    </section>
+
+    <!-- 03 · CONFRONTO · Centralizzato e distribuito -->
+    <section class="slide" data-type="confronto" x-show="current === 3" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/02-centralizzato-distribuito.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Centralizzato o distribuito</h2>
+<div class="compare"><div class="compare-col link"><h3>Centralizzato (CVS, Subversion)</h3><ul><li>Un solo server con la storia</li><li>Senza rete non si registrano versioni</li><li>Se il server si guasta, la storia è a rischio</li></ul></div><div class="compare-col add"><h3>Distribuito (Git, Mercurial)</h3><ul><li>Ogni copia contiene tutta la storia</li><li>Si lavora e si fa commit anche offline</li><li>La copia su GitHub è solo quella condivisa</li></ul></div></div>
+    </section>
+
+    <!-- 04 · DEFINIZIONE · Git -->
+    <section class="slide" data-type="definizione" x-show="current === 4" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/03-git.md</p>
+<p class="deflabel">Git</p>
+<div class="defbox">Sistema di controllo di versione <strong>distribuito</strong>, creato nel 2005 da Linus Torvalds per sviluppare il kernel Linux. Oggi è lo standard di fatto.<br><br>
+Funziona da terminale (<code>git …</code>) e dentro gli editor: il pannello <em>Controllo del codice sorgente</em> di Antigravity e di VS Code usa lo stesso Git installato sul PC.</div>
+    </section>
+
+    <!-- 05 · GRIGLIA · Parole chiave di Git -->
+    <section class="slide" data-type="griglia" x-show="current === 5" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/04-parole-chiave.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Sei parole da sapere</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Repository</h4><p>La cartella del progetto con tutta la sua storia (la sottocartella nascosta <code>.git</code>).</p></div><div class="grid-card gold"><h4>Commit</h4><p>Una fotografia dei file in un momento, con autore, data e messaggio.</p></div><div class="grid-card link"><h4>Branch</h4><p>Una linea di lavoro parallela, che si può unire alle altre.</p></div><div class="grid-card gold"><h4>Merge</h4><p>L'unione di due linee di lavoro.</p></div><div class="grid-card add"><h4>Remote</h4><p>Una copia del repository su un altro computer, di solito GitHub.</p></div><div class="grid-card add"><h4>Clone</h4><p>Scaricare un repository remoto con tutta la storia.</p></div></div>
+    </section>
+
+    <!-- 06 · SCHEMA · Le tre aree di Git -->
+    <section class="slide" data-type="schema" x-show="current === 6" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/05-tre-aree.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Le tre aree di Git, più GitHub</h2>
+
+<svg class="schema" viewBox="0 0 900 305" role="img" aria-label="Cartella di lavoro, area di staging, repository locale e GitHub, collegati da git add, git commit, git push e git pull">
+  <defs><marker id="fr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m"/></marker></defs>
+  <rect x="20"  y="70" width="170" height="110" rx="4" class="box"/>
+  <rect x="250" y="70" width="170" height="110" rx="4" class="box gold"/>
+  <rect x="480" y="70" width="170" height="110" rx="4" class="box link"/>
+  <rect x="710" y="70" width="170" height="110" rx="4" class="box add"/>
+  <text x="105" y="112" class="t">Cartella</text><text x="105" y="136" class="t">di lavoro</text><text x="105" y="162" class="s">i file che modifichi</text>
+  <text x="335" y="112" class="t">Area di</text><text x="335" y="136" class="t">staging</text><text x="335" y="162" class="s">cosa entra nella foto</text>
+  <text x="565" y="112" class="t">Repository</text><text x="565" y="136" class="t">locale</text><text x="565" y="162" class="s">la storia, sul tuo PC</text>
+  <text x="795" y="112" class="t">GitHub</text><text x="795" y="136" class="t">(remoto)</text><text x="795" y="162" class="s">la copia condivisa</text>
+  <line x1="190" y1="100" x2="248" y2="100" class="a" marker-end="url(#fr)"/><text x="220" y="52" class="c">git add</text>
+  <line x1="420" y1="100" x2="478" y2="100" class="a" marker-end="url(#fr)"/><text x="450" y="52" class="c">git commit</text>
+  <line x1="650" y1="100" x2="708" y2="100" class="a" marker-end="url(#fr)"/><text x="680" y="52" class="c">git push</text>
+  <path d="M795,182 C795,250 105,250 105,182" class="a back" marker-end="url(#fr)"/>
+  <text x="450" y="290" class="c">git clone / git pull: la storia torna sul PC e aggiorna i file</text>
+</svg>
+    </section>
+
+    <!-- 07 · DEFINIZIONE · Anatomia di un commit -->
+    <section class="slide" data-type="definizione" x-show="current === 7" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/06-commit.md</p>
+<p class="deflabel">Che cosa contiene un commit</p>
+<div class="defbox"><strong>Hash</strong>: identificativo univoco (es. <code>a1b2c3d</code>, forma breve di 40 caratteri esadecimali).<br>
+<strong>Autore</strong>: nome ed email configurati con <code>git config</code>.<br>
+<strong>Data e ora</strong>.<br>
+<strong>Messaggio</strong>: cosa è cambiato e perché.<br>
+<strong>Genitore</strong>: il commit precedente (due genitori, se è un merge).<br>
+<strong>Fotografia</strong> di tutti i file tracciati.</div>
+    </section>
+
+    <!-- 08 · TECNICO · Staging e commit: i comandi -->
+    <section class="slide" data-type="tecnico" x-show="current === 8" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/07-comandi-commit.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Staging e commit: i comandi</h2>
+<pre class="code-block"><span class="cm"># una volta per PC</span>
+git config --global user.name "Nome Cognome"
+git config --global user.email "indirizzo@esempio.it"
+
+<span class="cm"># tutti i giorni</span>
+git status                       <span class="cm"># cosa è cambiato?</span>
+git add README.md                <span class="cm"># metti in staging un file</span>
+git add .                        <span class="cm"># metti in staging tutto</span>
+git commit -m "README: obiettivo sulla spiegazione del codice"
+git commit -am "…"               <span class="cm"># add + commit, solo file già tracciati</span>
+git log --oneline                <span class="cm"># la storia, una riga per commit</span></pre>
+    </section>
+
+    <!-- 09 · DIFF · Leggere un diff -->
+    <section class="slide" data-type="diff" x-show="current === 9" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/08-diff.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Leggere un diff come una correzione</h2>
+<p class="diff-file"><span class="dot add"></span>1 aggiunta<span class="dot del"></span>1 rimozione — scontrini.py</p>
+<div class="diff-block">
+<div class="diff-line ctx">def totale_scontrino(prezzi):</div>
+<div class="diff-line ctx">    totale = 0</div>
+<div class="diff-line del">    for i in range(1, len(prezzi)):</div>
+<div class="diff-line del">        totale = totale + prezzi[i]</div>
+<div class="diff-line add">    for prezzo in prezzi:</div>
+<div class="diff-line add">        totale = totale + prezzo</div>
+</div>
+<p class="body-text" style="margin-top:.9rem;"><code>git diff</code> mostra le modifiche non ancora in staging; <code>git diff --staged</code> quelle pronte per il commit.</p>
+    </section>
+
+    <!-- 10 · TECNICO · Cosa non si versiona: .gitignore -->
+    <section class="slide" data-type="tecnico" x-show="current === 10" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/09-gitignore.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Cosa non si versiona</h2>
+<pre class="code-block"><span class="cm"># .gitignore — nella radice del repository</span>
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.env              <span class="cm"># chiavi e password: MAI nel repository</span>
+*.key
+.DS_Store
+Thumbs.db</pre>
+<p class="body-text">Mai nel repository: password, chiavi, token, <strong>dati personali degli studenti</strong>. Il <code>.gitignore</code> è un salvagente, non una garanzia: un file già committato resta nella storia.</p>
+    </section>
+
+    <!-- 11 · SCHEMA · Branch e merge -->
+    <section class="slide" data-type="schema" x-show="current === 11" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/10-branch.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Branch: linee di lavoro parallele</h2>
+
+<svg class="schema" viewBox="0 0 900 260" role="img" aria-label="Il branch main con tre commit; il branch artefatto si separa, riceve due commit e rientra con un merge">
+  <line x1="60" y1="80" x2="840" y2="80" class="l main"/>
+  <path d="M250,80 C300,80 300,190 350,190 L560,190 C610,190 610,80 660,80" class="l br"/>
+  <circle cx="90"  cy="80" r="16" class="n"/><circle cx="170" cy="80" r="16" class="n"/><circle cx="250" cy="80" r="16" class="n"/>
+  <circle cx="420" cy="80" r="16" class="n"/>
+  <circle cx="400" cy="190" r="16" class="n b"/><circle cx="510" cy="190" r="16" class="n b"/>
+  <circle cx="660" cy="80" r="19" class="n m"/><circle cx="780" cy="80" r="16" class="n"/>
+  <text x="40" y="50" class="lab">main</text>
+  <text x="455" y="238" class="lab b">artefatto-tracciatore</text>
+  <text x="660" y="40" class="c">merge</text>
+  <text x="215" y="150" class="c">git switch -c</text>
+  <text x="420" y="45" class="c">un commit su main nel frattempo</text>
+</svg>
+<p class="body-text" style="margin-top:.6rem;">Un branch costa pochissimo: si crea per ogni attività (un artefatto, un esercizio, una correzione) e si unisce a <code>main</code> quando è pronta.</p>
+    </section>
+
+    <!-- 12 · TECNICO · Comandi dei branch -->
+    <section class="slide" data-type="tecnico" x-show="current === 12" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/11-comandi-branch.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">I comandi dei branch</h2>
+<table class="tab"><thead><tr><th>Cosa</th><th>Comando consigliato</th><th>Forma equivalente (vecchia)</th></tr></thead><tbody><tr><td>Elenca i branch</td><td><code>git branch</code></td><td>—</td></tr><tr><td>Crea e spostati</td><td><code>git switch -c nome</code></td><td><code>git checkout -b nome</code></td></tr><tr><td>Spostati su un branch</td><td><code>git switch main</code></td><td><code>git checkout main</code></td></tr><tr><td>Unisci nel branch attuale</td><td><code>git merge nome</code></td><td>—</td></tr><tr><td>Cancella (già unito)</td><td><code>git branch -d nome</code></td><td>—</td></tr><tr><td>Rinomina</td><td><code>git branch -m vecchio nuovo</code></td><td>—</td></tr><tr><td>Branch locali e remoti</td><td><code>git branch -a</code></td><td>—</td></tr><tr><td>Grafo di tutti i branch</td><td><code>git log --graph --oneline --all</code></td><td>—</td></tr></tbody></table>
+    </section>
+
+    <!-- 13 · TECNICO · Il conflitto -->
+    <section class="slide" data-type="tecnico" x-show="current === 13" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/12-conflitto.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Il conflitto: una domanda, non un errore</h2>
+<pre class="code-block"><span class="cm"># git pull</span>
+CONFLICT (content): Merge conflict in README.md
+Automatic merge failed; fix conflicts and then commit the result.
+
+<span class="cm"># README.md</span>
+<span class="k-del">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span>
+**Classe:** terza AFM            <span class="cm">← la tua versione (locale)</span>
+<span class="k-mid">=======</span>
+**Classe:** terza SIA            <span class="cm">← la versione arrivata da GitHub</span>
+<span class="k-add">&gt;&gt;&gt;&gt;&gt;&gt;&gt; e1e6dc6</span></pre>
+<p class="body-text">Scegli cosa tenere, <strong>cancella i marcatori</strong>, salva, poi <code>git add README.md</code> e <code>git commit</code>.</p>
+    </section>
+
+    <!-- 14 · CONFRONTO · Tornare indietro: revert e reset -->
+    <section class="slide" data-type="confronto" x-show="current === 14" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/13-tornare-indietro.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Tornare indietro senza fare danni</h2>
+<div class="compare"><div class="compare-col del"><h3>git reset --hard</h3><ul><li>Cancella commit dalla storia</li><li>Se la storia era già su GitHub crea problemi a chiunque l'abbia scaricata</li><li><strong>In aula: no</strong></li></ul></div><div class="compare-col add"><h3>git revert &lt;hash&gt;</h3><ul><li>Aggiunge un commit che annulla un commit precedente</li><li>La storia resta leggibile</li><li><strong>In aula: sempre questo</strong></li></ul></div></div>
+<p class="note">Il revert di un commit di merge richiede l'opzione -m: in aula si annullano commit normali.</p>
+    </section>
+
+    <!-- 15 · SCHEMA · Remoti: push, fetch, pull -->
+    <section class="slide" data-type="schema" x-show="current === 15" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/14-remoti.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Remoti: push, fetch, pull</h2>
+
+<svg class="schema" viewBox="0 0 900 280" role="img" aria-label="Repository locale e repository remoto origin su GitHub, collegati da push, fetch e pull">
+  <defs><marker id="fr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m"/></marker></defs>
+  <rect x="10" y="60" width="260" height="160" rx="4" class="box link"/>
+  <rect x="630" y="60" width="260" height="160" rx="4" class="box add"/>
+  <text x="140" y="100" class="t">Il tuo PC</text><text x="140" y="130" class="s">branch main</text><text x="140" y="155" class="s">+ origin/main: com'era GitHub</text><text x="140" y="175" class="s">all'ultimo contatto</text>
+  <text x="760" y="100" class="t">GitHub: origin</text><text x="760" y="130" class="s">branch main</text><text x="760" y="155" class="s">il repository da cui hai</text><text x="760" y="175" class="s">fatto il clone</text>
+  <line x1="270" y1="95" x2="628" y2="95" class="a" marker-end="url(#fr2)"/><text x="450" y="84" class="c">git push: manda i tuoi commit</text>
+  <line x1="628" y1="145" x2="272" y2="145" class="a" marker-end="url(#fr2)"/><text x="450" y="134" class="c">git fetch: scarica, non tocca i file</text>
+  <line x1="628" y1="190" x2="272" y2="190" class="a back" marker-end="url(#fr2)"/><text x="450" y="212" class="c">git pull = fetch + merge</text>
+</svg>
+    </section>
+
+    <!-- 16 · TECNICO · Messaggi frequenti -->
+    <section class="slide" data-type="tecnico" x-show="current === 16" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/01-git/15-messaggi.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Quando Git dice di no</h2>
+<table class="tab"><thead><tr><th>Messaggio</th><th>Cosa significa</th><th>Cosa fare</th></tr></thead><tbody><tr><td><code>! [rejected] … (fetch first)</code></td><td>GitHub ha commit che tu non hai</td><td><code>git pull</code>, poi <code>git push</code></td></tr><tr><td><code>Need to specify how to reconcile divergent branches</code></td><td>Git non sa se unire con merge o rebase</td><td><code>git config --global pull.rebase false</code></td></tr><tr><td><code>Please tell me who you are</code></td><td>Manca l'identità</td><td>i due <code>git config</code></td></tr><tr><td><code>Your local changes would be overwritten</code></td><td>Modifiche non salvate</td><td><code>git commit</code> o <code>git stash</code></td></tr><tr><td><code>Password authentication was removed</code></td><td>GitHub non accetta la password</td><td>accesso dal browser o token</td></tr></tbody></table>
+    </section>
+
+    <!-- 17 · CONFRONTO · Git e GitHub -->
+    <section class="slide" data-type="confronto" x-show="current === 17" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/02-github/01-git-github.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Git e GitHub non sono la stessa cosa</h2>
+<div class="compare"><div class="compare-col link"><h3>Git</h3><ul><li>Programma installato sul PC</li><li>Versiona i file, anche offline</li><li>Open source, gratuito</li></ul></div><div class="compare-col add"><h3>GitHub</h3><ul><li>Servizio web (di Microsoft) che ospita repository Git</li><li>Aggiunge collaborazione: issue, pull request, revisione</li><li>Aggiunge servizi: Pages, Actions, Copilot, Codespaces</li></ul></div></div>
+<p class="note">Alternative a GitHub con lo stesso Git: GitLab, Bitbucket, Gitea.</p>
+    </section>
+
+    <!-- 18 · GRIGLIA · Un repository su GitHub -->
+    <section class="slide" data-type="griglia" x-show="current === 18" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/02-github/02-repository.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Cosa si vede in un repository</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Code</h4><p>File, branch, commit, README mostrato in basso.</p></div><div class="grid-card gold"><h4>Issues</h4><p>Segnalazioni, idee, compiti.</p></div><div class="grid-card gold"><h4>Pull requests</h4><p>Modifiche proposte da rivedere e unire.</p></div><div class="grid-card add"><h4>Actions</h4><p>Automazioni: test, pubblicazioni.</p></div><div class="grid-card link"><h4>Insights</h4><p>Statistiche: commit, contributori, traffico.</p></div><div class="grid-card del"><h4>Settings</h4><p>Visibilità, Pages, collaboratori, protezioni.</p></div></div>
+    </section>
+
+    <!-- 19 · GRIGLIA · I file speciali -->
+    <section class="slide" data-type="griglia" x-show="current === 19" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/02-github/03-file-speciali.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">I file che GitHub riconosce</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>README.md</h4><p>La presentazione del repository, mostrata nella pagina iniziale.</p></div><div class="grid-card gold"><h4>LICENSE</h4><p>Cosa possono fare gli altri con il tuo lavoro (MIT, CC BY…).</p></div><div class="grid-card add"><h4>.gitignore</h4><p>I file da non versionare.</p></div><div class="grid-card link"><h4>CONTRIBUTING.md</h4><p>Come contribuire al progetto.</p></div><div class="grid-card gold"><h4>CODE_OF_CONDUCT.md</h4><p>Regole di comportamento della comunità.</p></div><div class="grid-card del"><h4>SECURITY.md</h4><p>Come segnalare una vulnerabilità.</p></div></div>
+    </section>
+
+    <!-- 20 · CICLO · GitHub Flow -->
+    <section class="slide" data-type="ciclo" x-show="current === 20" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/02-github/04-github-flow.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">GitHub Flow: il ciclo di lavoro</h2>
+<div class="cycle">
+<svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42"/></svg>
+<div class="cycle-node current" style="top:8%; left:50%;"><div class="dot">01</div><span class="label">Crea un<br>branch</span></div>
+<div class="cycle-node" style="top:29%; left:86%;"><div class="dot">02</div><span class="label">Commit</span></div>
+<div class="cycle-node" style="top:71%; left:86%;"><div class="dot">03</div><span class="label">Apri una<br>pull request</span></div>
+<div class="cycle-node" style="top:92%; left:50%;"><div class="dot">04</div><span class="label">Revisione<br>e test</span></div>
+<div class="cycle-node" style="top:71%; left:14%;"><div class="dot">05</div><span class="label">Merge</span></div>
+<div class="cycle-node" style="top:29%; left:14%;"><div class="dot">06</div><span class="label">Pubblica<br>(Pages)</span></div>
+</div>
+<p class="cycle-caption">main resta sempre funzionante: ogni modifica passa da un branch e da una pull request.</p>
+    </section>
+
+    <!-- 21 · GRIGLIA · Modi di usare GitHub -->
+    <section class="slide" data-type="griglia" x-show="current === 21" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/02-github/05-interfacce.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Tanti modi di usare GitHub</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Sito web</h4><p>Tutto dal browser: file, commit, PR, impostazioni.</p></div><div class="grid-card gold"><h4>Editor + Git</h4><p>Antigravity, VS Code: terminale e pannello grafico.</p></div><div class="grid-card add"><h4>GitHub Desktop</h4><p>App grafica per clone, commit, push, senza terminale.</p></div><div class="grid-card link"><h4>GitHub CLI (gh)</h4><p>Issue e PR dal terminale: <code>gh pr create</code>.</p></div><div class="grid-card gold"><h4>GitHub Mobile</h4><p>Notifiche, revisioni e merge dal telefono.</p></div><div class="grid-card add"><h4>github.dev</h4><p>Premi il tasto <code>.</code> su un repository: editor nel browser, senza terminale.</p></div></div>
+    </section>
+
+    <!-- 22 · GRIGLIA · Accedere in modo sicuro -->
+    <section class="slide" data-type="griglia" x-show="current === 22" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/02-github/06-accesso.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Accedere a GitHub dal PC</h2>
+<div class="grid-cards"><div class="grid-card add"><h4>Accesso dal browser</h4><p>Al primo push si apre il browser: autorizzi e torni all'editor. <strong>La strada consigliata.</strong></p></div><div class="grid-card gold"><h4>Token personale</h4><p>Sostituisce la password da terminale. Meglio il tipo <em>fine-grained</em>: un solo repository, permessi minimi, scadenza breve.</p></div><div class="grid-card link"><h4>Chiavi SSH</h4><p>Coppia di chiavi: la pubblica su GitHub, la privata sul PC. Comoda per chi usa sempre lo stesso PC.</p></div><div class="grid-card del"><h4>Autenticazione a due fattori</h4><p>Obbligatoria per chi contribuisce: app di autenticazione, chiave di sicurezza o passkey.</p></div></div>
+<p class="note">Un token è una password: mai in una chat con l'IA, mai in un file del repository.</p>
+    </section>
+
+    <!-- 23 · CONFRONTO · Account personali e organizzazioni -->
+    <section class="slide" data-type="confronto" x-show="current === 23" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/02-github/07-account.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Account personali e organizzazioni</h2>
+<div class="compare"><div class="compare-col link"><h3>Account personale</h3><ul><li>Uno per persona</li><li>I repository hanno un solo proprietario</li><li>Si aggiungono collaboratori</li></ul></div><div class="compare-col add"><h3>Organizzazione</h3><ul><li>Spazio condiviso (es. la scuola)</li><li>Più proprietari, team, permessi per team</li><li>Piani per scuole: GitHub Education</li></ul></div></div>
+<p class="note">Piani e prezzi cambiano spesso: verificare su github.com/pricing prima di citarli.</p>
+    </section>
+
+    <!-- 24 · ESERCIZIO-GUIDATO · Creare un repository -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 24" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/03-repository/01-creare.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Creare un repository</h2>
+<ol class="step-list"><li><strong>+</strong> in alto a destra → <strong>New repository</strong></li><li>Nome: minuscole e trattini, niente spazi né accenti (<code>kit-uda-cicli</code>)</li><li><strong>Public</strong> (serve per Pages con l'account gratuito) o <strong>Private</strong></li><li>Aggiungi README, <code>.gitignore</code> (modello Python) e licenza</li><li><strong>Create repository</strong></li></ol>
+    </section>
+
+    <!-- 25 · DEFINIZIONE · Repository template -->
+    <section class="slide" data-type="definizione" x-show="current === 25" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/03-repository/02-template.md</p>
+<p class="deflabel">Repository template</p>
+<div class="defbox">Un repository marcato come template (<em>Settings → General → Template repository</em>) mostra il pulsante <strong>Use this template</strong>: chiunque può creare un <strong>nuovo repository</strong> con gli stessi file, ma <strong>senza la storia</strong> e senza legame con l'originale.<br><br>
+È il meccanismo del <code>kit-uda-template</code> dell'Incontro 1, ed è il modo più semplice per dare a ogni studente lo stesso punto di partenza.</div>
+    </section>
+
+    <!-- 26 · SCHEMA · Clone e fork -->
+    <section class="slide" data-type="schema" x-show="current === 26" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/03-repository/03-clone-fork.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Clone, fork, template: le differenze</h2>
+
+<svg class="schema" viewBox="0 0 900 280" role="img" aria-label="Repository originale, fork sul proprio account GitHub, clone sul PC; il contributo torna all'originale con una pull request">
+  <defs><marker id="fr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m"/></marker></defs>
+  <rect x="30" y="40" width="240" height="100" rx="4" class="box gold"/><text x="150" y="82" class="t">Originale</text><text x="150" y="108" class="s">prof/kit-uda-template</text>
+  <rect x="330" y="40" width="240" height="100" rx="4" class="box add"/><text x="450" y="82" class="t">Il tuo fork</text><text x="450" y="108" class="s">tu/kit-uda-template</text>
+  <rect x="630" y="160" width="240" height="90" rx="4" class="box link"/><text x="750" y="198" class="t">Il tuo PC</text><text x="750" y="224" class="s">git clone del fork</text>
+  <line x1="270" y1="75" x2="328" y2="75" class="a" marker-end="url(#fr3)"/><text x="300" y="62" class="c">Fork</text>
+  <path d="M570,110 C650,110 700,120 720,158" class="a" marker-end="url(#fr3)"/><text x="660" y="100" class="c">clone</text>
+  <path d="M630,215 C520,215 470,180 460,142" class="a back" marker-end="url(#fr3)"/><text x="520" y="235" class="c">push</text>
+  <path d="M330,130 C250,200 170,190 150,142" class="a back" marker-end="url(#fr3)"/><text x="215" y="215" class="c">pull request</text>
+</svg>
+<p class="body-text" style="margin-top:.4rem;"><strong>Clone</strong>: copia sul tuo PC. <strong>Fork</strong>: copia sul tuo account GitHub, legata all'originale (si può proporre una PR). <strong>Template</strong>: copia nuova, senza legame né storia.</p>
+    </section>
+
+    <!-- 27 · GRIGLIA · Star, watch, aggiungere file -->
+    <section class="slide" data-type="griglia" x-show="current === 27" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/03-repository/04-azioni.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Piccole azioni utili</h2>
+<div class="grid-cards"><div class="grid-card gold"><h4>Star</h4><p>Segnalibro pubblico: salvi un repository che ti interessa.</p></div><div class="grid-card link"><h4>Watch</h4><p>Ricevi le notifiche di un repository: tutte, solo le menzioni, solo le release.</p></div><div class="grid-card add"><h4>Add file</h4><p>Crea o carica file dal browser (fino a 25 MB ciascuno dal sito).</p></div><div class="grid-card del"><h4>File grandi</h4><p>Oltre 100 MB Git rifiuta il push: per dataset grandi serve Git LFS o un altro spazio.</p></div></div>
+    </section>
+
+    <!-- 28 · DEFINIZIONE · Tag e release -->
+    <section class="slide" data-type="definizione" x-show="current === 28" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/03-repository/05-release.md</p>
+<p class="deflabel">Tag e release</p>
+<div class="defbox"><strong>Tag</strong>: un nome fisso dato a un commit (<code>v1.0</code>). Da terminale: <code>git tag v1.0</code> e <code>git push origin v1.0</code>.<br><br>
+<strong>Release</strong>: pagina di GitHub costruita su un tag, con note e file allegati scaricabili. <em>Releases → Draft a new release</em>.<br><br>
+Nel laboratorio: il kit chiude l'Incontro 4 con la release <code>v1.0</code>. L'anno prossimo, <code>v1.0</code> sarà ancora lì.</div>
+    </section>
+
+    <!-- 29 · GRIGLIA · Insights: la storia come evidenza -->
+    <section class="slide" data-type="griglia" x-show="current === 29" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/03-repository/06-insights.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Insights: la cronologia racconta il processo</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Commits</h4><p>Quanti commit, in quali giorni.</p></div><div class="grid-card gold"><h4>Contributors</h4><p>Chi ha contribuito e quanto.</p></div><div class="grid-card add"><h4>Network</h4><p>Il grafo dei branch e dei merge.</p></div><div class="grid-card link"><h4>Code frequency</h4><p>Righe aggiunte e tolte nel tempo.</p></div><div class="grid-card gold"><h4>Pulse</h4><p>Riassunto dell'attività recente: PR, issue.</p></div><div class="grid-card del"><h4>Traffic</h4><p>Visite e clone (solo per chi ha accesso in scrittura).</p></div></div>
+<p class="note">Un progetto con un solo commit "finito" alle 23:58 non prova nulla: è una domanda da fare all'orale.</p>
+    </section>
+
+    <!-- 30 · CONFRONTO · Issue, discussioni, pull request -->
+    <section class="slide" data-type="confronto" x-show="current === 30" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/01-issue-discussioni-pr.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Issue, discussioni o pull request?</h2>
+<table class="tab"><thead><tr><th>Strumento</th><th>Serve per</th><th>Esempio in classe</th></tr></thead><tbody><tr><td>Issue</td><td>un problema o un compito da fare</td><td>«Il tracciatore non accetta i decimali»</td></tr><tr><td>Discussione</td><td>domande e idee aperte, senza un compito preciso</td><td>«Che dataset usiamo per il progetto?»</td></tr><tr><td>Pull request</td><td>una modifica concreta da rivedere e unire</td><td>«Accetta la virgola nei decimali»</td></tr></tbody></table>
+    </section>
+
+    <!-- 31 · GRIGLIA · Issue: le funzioni utili -->
+    <section class="slide" data-type="griglia" x-show="current === 31" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/02-issue.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Issue: le funzioni utili</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Assegnatari</h4><p>Chi se ne occupa.</p></div><div class="grid-card gold"><h4>Etichette</h4><p>bug, documentazione, domanda…</p></div><div class="grid-card add"><h4>Branch dall'issue</h4><p><em>Create a branch</em> nella colonna destra: branch già collegato all'issue.</p></div><div class="grid-card link"><h4>Template e form</h4><p>Moduli precompilati in <code>.github/ISSUE_TEMPLATE/</code>.</p></div><div class="grid-card gold"><h4>Pin</h4><p>Fino a 3 issue fissate in cima.</p></div><div class="grid-card del"><h4>Chiusura automatica</h4><p><code>Closes #1</code> nella PR: al merge l'issue si chiude.</p></div></div>
+    </section>
+
+    <!-- 32 · SCHEMA · Pull request: base e compare -->
+    <section class="slide" data-type="schema" x-show="current === 32" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/03-pr-base-compare.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Pull request: base e compare</h2>
+
+<svg class="schema" viewBox="0 0 900 200" role="img" aria-label="Base e compare: la pull request propone di portare i commit del branch compare dentro il branch base">
+  <defs><marker id="fr4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m"/></marker></defs>
+  <rect x="40" y="50" width="300" height="100" rx="4" class="box add"/><text x="190" y="92" class="t">base: main</text><text x="190" y="120" class="s">dove voglio arrivare</text>
+  <rect x="560" y="50" width="300" height="100" rx="4" class="box link"/><text x="710" y="92" class="t">compare: artefatto</text><text x="710" y="120" class="s">cosa propongo</text>
+  <line x1="558" y1="100" x2="342" y2="100" class="a" marker-end="url(#fr4)"/><text x="450" y="85" class="c">pull request</text>
+  <text x="450" y="185" class="c">diff · commenti · test · approvazione</text>
+</svg>
+<p class="body-text">Una pull request è una <strong>proposta</strong>: «porta i commit di questo branch dentro quello». È il posto dove si guarda il diff complessivo, si commenta e si decide.</p>
+    </section>
+
+    <!-- 33 · GRIGLIA · Stati di una pull request -->
+    <section class="slide" data-type="griglia" x-show="current === 33" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/04-pr-stati.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Gli stati di una pull request</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Draft</h4><p>Lavoro in corso, non ancora da rivedere.</p></div><div class="grid-card gold"><h4>Open</h4><p>Aperta, pronta per revisione e discussione.</p></div><div class="grid-card gold"><h4>Review required</h4><p>Serve l'approvazione di un revisore.</p></div><div class="grid-card del"><h4>Changes requested</h4><p>Il revisore chiede modifiche.</p></div><div class="grid-card add"><h4>Approved</h4><p>Approvata: si può unire.</p></div><div class="grid-card del"><h4>Conflict</h4><p>Conflitto con la base: va risolto prima.</p></div><div class="grid-card add"><h4>Merged</h4><p>Unita alla base.</p></div><div class="grid-card link"><h4>Closed</h4><p>Chiusa senza unirla.</p></div></div>
+    </section>
+
+    <!-- 34 · GRIGLIA · Revisionare una pull request -->
+    <section class="slide" data-type="griglia" x-show="current === 34" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/05-revisione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Revisionare una pull request</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Files changed</h4><p>Il diff completo, file per file.</p></div><div class="grid-card gold"><h4>Commento su una riga</h4><p>Il <strong>+</strong> blu accanto alla riga.</p></div><div class="grid-card add"><h4>Suggerimento</h4><p>Blocco <code>suggestion</code>: l'autore lo accetta con un clic.</p></div><div class="grid-card del"><h4>Esito della revisione</h4><p>Comment, Approve o Request changes.</p></div></div>
+<p class="body-text">In classe: la revisione tra compagni è un'attività di <strong>lettura del codice</strong> (livello 0-2 dello spettro).</p>
+    </section>
+
+    <!-- 35 · CONFRONTO · Tre modi di unire -->
+    <section class="slide" data-type="confronto" x-show="current === 35" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/06-modi-merge.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Tre modi di unire una pull request</h2>
+<table class="tab"><thead><tr><th>Opzione</th><th>Cosa succede alla storia</th><th>Quando</th></tr></thead><tbody><tr><td>Create a merge commit</td><td>tutti i commit del branch + un commit di merge</td><td>predefinita: la storia resta completa</td></tr><tr><td>Squash and merge</td><td>tutti i commit diventano uno solo</td><td>branch con tanti commit piccoli di prova</td></tr><tr><td>Rebase and merge</td><td>i commit vengono ricopiati in fila su main, senza commit di merge</td><td>chi vuole una storia lineare</td></tr></tbody></table>
+<p class="note">Per gli studenti: il merge commit, perché la cronologia resta leggibile come evidenza del processo.</p>
+    </section>
+
+    <!-- 36 · GRIGLIA · Revisori obbligatori e CODEOWNERS -->
+    <section class="slide" data-type="griglia" x-show="current === 36" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/07-revisori.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Chi deve approvare</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>CODEOWNERS</h4><p>File <code>.github/CODEOWNERS</code>: chi è responsabile di quali cartelle, chiamato in revisione automaticamente.</p></div><div class="grid-card gold"><h4>Revisori obbligatori</h4><p>Con le regole di protezione: nessun merge senza N approvazioni.</p></div><div class="grid-card add"><h4>Template della PR</h4><p><code>.github/pull_request_template.md</code>: la descrizione precompilata (cosa, perché, come l'ho provato).</p></div></div>
+    </section>
+
+    <!-- 37 · GRIGLIA · Notifiche e menzioni -->
+    <section class="slide" data-type="griglia" x-show="current === 37" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/08-notifiche.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Notifiche e menzioni</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>@nome</h4><p>Menziona una persona: riceve una notifica.</p></div><div class="grid-card gold"><h4>@org/team</h4><p>Menziona un intero team.</p></div><div class="grid-card add"><h4>#numero</h4><p>Collega un'issue o una PR.</p></div><div class="grid-card del"><h4>Inbox</h4><p>github.com/notifications: filtri per motivo, repository, stato.</p></div></div>
+    </section>
+
+    <!-- 38 · TECNICO · Markdown essenziale -->
+    <section class="slide" data-type="tecnico" x-show="current === 38" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/09-markdown.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Markdown essenziale</h2>
+<pre class="code-block"># Titolo            ## Sottotitolo
+**grassetto**   *corsivo*   `codice`
+- elenco puntato
+1. elenco numerato
+[testo del link](https://esempio.it)
+![descrizione immagine](immagine.png)
+
+```python
+print("blocco di codice con evidenziazione")
+```</pre>
+    </section>
+
+    <!-- 39 · TECNICO · GitHub Flavored Markdown -->
+    <section class="slide" data-type="tecnico" x-show="current === 39" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/04-collaborare/10-gfm.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Le estensioni di GitHub</h2>
+<pre class="code-block">| Fase | Livello |          <span class="cm"># tabelle</span>
+|---|---|
+| Tracing | 0 |
+
+- [x] Scheda UdA              <span class="cm"># liste di controllo</span>
+- [ ] Patto d'aula
+
+> [!NOTE]                     <span class="cm"># riquadri di avviso</span>
+> Le chiavi stanno nel repository privato.
+
+```mermaid                    <span class="cm"># diagrammi</span>
+graph LR; branch--&gt;PR--&gt;merge
+```
+:rocket:  @collega  #12       <span class="cm"># emoji, menzioni, riferimenti</span></pre>
+    </section>
+
+    <!-- 40 · CONFRONTO · GitHub Pages -->
+    <section class="slide" data-type="confronto" x-show="current === 40" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/05-pubblicare/01-pages.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">GitHub Pages: un sito dal repository</h2>
+<div class="compare"><div class="compare-col add"><h3>Sito di progetto (quello del laboratorio)</h3><ul><li>Qualunque repository pubblico</li><li><em>Settings → Pages → Deploy from a branch → main / (root)</em></li><li><code>utente.github.io/nome-repository/</code></li></ul></div><div class="compare-col link"><h3>Sito personale</h3><ul><li>Repository chiamato <code>utente.github.io</code></li><li>Uno solo per account</li><li><code>utente.github.io</code></li></ul></div></div>
+<p class="note">Solo siti statici (HTML, CSS, JS). Si può usare Jekyll per generare pagine dal Markdown. Aggiornamento dopo 1-2 minuti.</p>
+    </section>
+
+    <!-- 41 · DEFINIZIONE · GitHub Actions -->
+    <section class="slide" data-type="definizione" x-show="current === 41" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/05-pubblicare/02-actions.md</p>
+<p class="deflabel">GitHub Actions</p>
+<div class="defbox">Automazioni che partono da un <strong>evento</strong> del repository (push, pull request, apertura di un'issue, orario…).<br><br>
+<strong>Workflow</strong>: file YAML in <code>.github/workflows/</code>.<br>
+<strong>Job</strong>: un gruppo di passi eseguiti su un <strong>runner</strong> (una macchina virtuale di GitHub).<br>
+<strong>Step</strong>: un comando o un'azione già pronta dal Marketplace.<br><br>
+Usi tipici: eseguire i test, pubblicare un sito, controllare lo stile del codice.</div>
+    </section>
+
+    <!-- 42 · TECNICO · Il workflow dei test -->
+    <section class="slide" data-type="tecnico" x-show="current === 42" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/05-pubblicare/03-workflow-test.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Il workflow del repository demo</h2>
+<pre class="code-block"><span class="cm"># .github/workflows/test.yml</span>
+name: Test
+on: [push, pull_request]          <span class="cm"># quando parte</span>
+jobs:
+  test:
+    runs-on: ubuntu-latest         <span class="cm"># dove gira</span>
+    steps:
+      - uses: actions/checkout@v4          <span class="cm"># scarica il repository</span>
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pytest
+      - run: pytest -q verifiche/test      <span class="cm"># 16 test</span></pre>
+<p class="note">Segno verde: 16 test superati. Con l'errore dello studente A: croce rossa, 7 test falliti su 16.</p>
+    </section>
+
+    <!-- 43 · GRIGLIA · Copilot in breve -->
+    <section class="slide" data-type="griglia" x-show="current === 43" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/05-pubblicare/04-copilot.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">GitHub Copilot in breve</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Completamento</h4><p>Suggerisce righe e funzioni mentre scrivi nell'editor.</p></div><div class="grid-card gold"><h4>Chat</h4><p>Domande sul codice, spiegazioni, test, nell'editor e su github.com.</p></div><div class="grid-card add"><h4>Agente</h4><p>Esegue compiti su più file e apre pull request.</p></div><div class="grid-card del"><h4>Piani</h4><p>Gratuito con limiti; gratuito per docenti e studenti verificati con GitHub Education. Verificare le condizioni aggiornate.</p></div></div>
+<p class="note">Nel laboratorio lo strumento principale è Antigravity: le stesse regole valgono per Copilot.</p>
+    </section>
+
+    <!-- 44 · CONFRONTO · Codespaces e github.dev -->
+    <section class="slide" data-type="confronto" x-show="current === 44" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/05-pubblicare/05-codespaces.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Programmare nel browser</h2>
+<div class="compare"><div class="compare-col link"><h3>github.dev</h3><ul><li>Tasto <code>.</code> su un repository</li><li>Editor nel browser, gratuito</li><li>Niente terminale: non esegue codice</li></ul></div><div class="compare-col add"><h3>Codespaces</h3><ul><li>Macchina virtuale con VS Code nel browser</li><li>Terminale, Python, esecuzione</li><li>Quota mensile gratuita per account personali; si configura con <code>.devcontainer/devcontainer.json</code></li></ul></div></div>
+<p class="note">Possibile ambiente per studenti senza installazioni: da verificare con i limiti d'età e d'account della scuola.</p>
+    </section>
+
+    <!-- 45 · GRIGLIA · Etichette e milestone -->
+    <section class="slide" data-type="griglia" x-show="current === 45" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/06-organizzare/01-etichette.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Etichette e milestone</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Etichette</h4><p>Classificano issue e PR: <code>bug</code>, <code>good first issue</code>, <code>documentation</code>… personalizzabili.</p></div><div class="grid-card gold"><h4>Milestone</h4><p>Raggruppano issue e PR verso una scadenza, con barra di avanzamento.</p></div><div class="grid-card add"><h4>In classe</h4><p>Una milestone per consegna («Mini-progetto, 15 marzo»), un'etichetta per tipo di attività.</p></div></div>
+    </section>
+
+    <!-- 46 · GRIGLIA · GitHub Projects -->
+    <section class="slide" data-type="griglia" x-show="current === 46" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/06-organizzare/02-projects.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">GitHub Projects: una bacheca per la classe</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Tabella</h4><p>Elenco con campi personalizzati (stato, priorità, data).</p></div><div class="grid-card gold"><h4>Board</h4><p>Colonne tipo kanban: Da fare, In corso, Fatto.</p></div><div class="grid-card add"><h4>Roadmap</h4><p>Elementi su una linea del tempo.</p></div><div class="grid-card del"><h4>Automazioni</h4><p>Es. PR unita → stato «Fatto».</p></div></div>
+<p class="body-text">Le schede sono issue e PR di uno o più repository: una bacheca per un progetto di gruppo di quinta.</p>
+    </section>
+
+    <!-- 47 · TECNICO · Livelli di permesso -->
+    <section class="slide" data-type="tecnico" x-show="current === 47" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/06-organizzare/03-permessi.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Chi può fare cosa in un repository</h2>
+<table class="tab"><thead><tr><th>Ruolo</th><th>Può…</th></tr></thead><tbody><tr><td>Read</td><td>leggere, clonare, aprire issue e commentare</td></tr><tr><td>Triage</td><td>in più gestire issue e PR (etichette, assegnazioni)</td></tr><tr><td>Write</td><td>in più fare push sui branch</td></tr><tr><td>Maintain</td><td>in più gestire parte delle impostazioni</td></tr><tr><td>Admin</td><td>tutto, comprese sicurezza e cancellazione</td></tr></tbody></table>
+<p class="note">Repository di un account personale: un proprietario e dei collaboratori (con accesso in scrittura). I ruoli graduati sono delle organizzazioni.</p>
+    </section>
+
+    <!-- 48 · DEFINIZIONE · Proteggere main -->
+    <section class="slide" data-type="definizione" x-show="current === 48" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/06-organizzare/04-protezione.md</p>
+<p class="deflabel">Proteggere il branch main</p>
+<div class="defbox"><em>Settings → Branches</em> (o <em>Rules → Rulesets</em>).<br><br>
+<strong>Pull request obbligatoria</strong> prima del merge · <strong>N approvazioni</strong> · <strong>controlli superati</strong> (es. i test di Actions verdi) · niente push forzati · niente cancellazione del branch.<br><br>
+Domanda per la classe: ha senso proteggere <code>main</code> in un repository di gruppo? Chi approva?</div>
+    </section>
+
+    <!-- 49 · GRIGLIA · Sicurezza del repository -->
+    <section class="slide" data-type="griglia" x-show="current === 49" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/06-organizzare/05-sicurezza.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">La scheda Security</h2>
+<div class="grid-cards"><div class="grid-card del"><h4>Secret scanning</h4><p>Individua chiavi e token nel codice; la <em>push protection</em> blocca il push prima che entrino.</p></div><div class="grid-card gold"><h4>Dependabot</h4><p>Avvisi e PR automatiche per le librerie con vulnerabilità note.</p></div><div class="grid-card link"><h4>Code scanning</h4><p>Analisi automatica del codice (CodeQL).</p></div><div class="grid-card add"><h4>Security policy</h4><p>Il file SECURITY.md: come segnalare un problema in privato.</p></div></div>
+<p class="note">Rilevano alcuni segreti riconoscibili, non tutti: la prima difesa resta non metterli nei file.</p>
+    </section>
+
+    <!-- 50 · GRIGLIA · Open source e comunità -->
+    <section class="slide" data-type="griglia" x-show="current === 50" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/06-organizzare/06-open-source.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Open source e strumenti di comunità</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Licenze</h4><p>Senza licenza, nessuno può riusare il tuo lavoro. MIT per il codice, CC BY per i materiali.</p></div><div class="grid-card gold"><h4>InnerSource</h4><p>Metodi open source dentro un'organizzazione chiusa: per un repository d'istituto dei materiali.</p></div><div class="grid-card add"><h4>Gist</h4><p>Frammenti di codice o testo, anche segreti (non elencati), con storia.</p></div><div class="grid-card link"><h4>Wiki</h4><p>Documentazione in pagine, dentro il repository.</p></div><div class="grid-card gold"><h4>Sponsors</h4><p>Sostenere economicamente chi mantiene un progetto.</p></div><div class="grid-card add"><h4>Scoperta</h4><p>Explore, Topics, Trending e ricerca: <code>language:python stars:&gt;100</code>.</p></div></div>
+    </section>
+
+    <!-- 51 · ATTENZIONE · Git e agenti IA -->
+    <section class="slide" data-type="attenzione" x-show="current === 51" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/07-classe/01-agenti.md</p>
+<p class="quote">«Non eseguire comandi git: proponimeli e spiegameli.»</p>
+<p class="body-text">Antigravity può fare commit e push al posto nostro. Per il docente è comodo; per chi impara si perde il modello mentale. La regola del workspace orienta, l'impostazione del terminale («chiedi prima di eseguire») garantisce.</p>
+    </section>
+
+    <!-- 52 · CONTENUTO · Ogni modifica dell'IA passa da una PR -->
+    <section class="slide" data-type="contenuto" x-show="current === 52" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/07-classe/02-pr-come-decisione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Ogni modifica generata passa da una pull request</h2>
+<ul class="bullet-list"><li>La PR trasforma «l'IA mi ha fatto un file» in «ho letto e deciso cosa integrare».</li><li>Il diff mostra esattamente cosa ha cambiato l'agente, anche dove non avevamo chiesto.</li><li>I test di Actions dicono se il comportamento è rimasto corretto.</li><li>La storia dei commit racconta il percorso: utile per noi e per valutare il processo degli studenti.</li></ul>
+    </section>
+
+    <!-- 53 · TECNICO · Una sequenza per la classe -->
+    <section class="slide" data-type="tecnico" x-show="current === 53" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/07-classe/03-sequenza.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Una sequenza per insegnare Git</h2>
+<table class="tab"><thead><tr><th>Classe</th><th>Cosa</th><th>Come</th></tr></thead><tbody><tr><td>Terza</td><td>il modello mentale</td><td>Learn Git Branching (learngitbranching.js.org), in coppia alla LIM</td></tr><tr><td>Terza</td><td>un repository per studente</td><td>commit dal browser, messaggi con cosa e perché</td></tr><tr><td>Quarta</td><td>Git locale</td><td>terminale o pannello grafico: status, add, commit, push, pull</td></tr><tr><td>Quarta-quinta</td><td>branch e PR</td><td>un branch per esercizio; PR rivista da un compagno</td></tr><tr><td>Quinta</td><td>issue e progetto</td><td>issue → branch → PR → merge, bacheca Projects</td></tr></tbody></table>
+    </section>
+
+    <!-- 54 · RIEPILOGO · Riepilogo -->
+    <section class="slide" data-type="riepilogo" x-show="current === 54" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/07-classe/04-riepilogo.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Cosa portiamo a casa</h2>
+<ul class="bullet-list"><li>Le tre aree di Git e il commit come fotografia con genitore</li><li>Branch, merge e conflitto: la decisione resta a una persona</li><li>revert per tornare indietro, mai reset --hard su lavoro condiviso</li><li>GitHub Flow: branch → commit → PR → revisione e test → merge → Pages</li><li>Mai segreti né dati degli studenti nel repository</li><li>Ogni modifica generata dall'IA passa da una pull request</li></ul>
+    </section>
+
+    <!-- 55 · GRIGLIA · Se vuoi certificarti -->
+    <section class="slide" data-type="griglia" x-show="current === 55" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ approfondimento</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/07-classe/05-certificazione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Se vuoi la certificazione GitHub Foundations</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Git e GitHub</h4><p>Concetti di base, repository, account.</p></div><div class="grid-card gold"><h4>Collaborazione</h4><p>Issue, PR, discussioni, notifiche.</p></div><div class="grid-card add"><h4>Sviluppo moderno</h4><p>Actions, Copilot, Codespaces.</p></div><div class="grid-card link"><h4>Gestione progetti</h4><p>Projects, etichette, milestone.</p></div><div class="grid-card gold"><h4>Privacy e sicurezza</h4><p>Permessi, protezioni, 2FA.</p></div><div class="grid-card add"><h4>Community</h4><p>Open source, InnerSource, licenze.</p></div></div>
+<p class="note">Formato, durata e costo dell'esame: verificare sulla pagina ufficiale di GitHub Certifications (possibili condizioni agevolate con GitHub Education).</p>
+    </section>
+
+    <!-- 56 · CHIUSURA · Chiusura -->
+    <section class="slide" data-type="chiusura" x-show="current === 56" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 2</span>
+      <p class="path"><b>lab6</b>/incontro-2/github/fine.md</p>
+<h2 class="title">Ora tocca al vostro repository</h2>
+<p class="body-text">Clone, commit, branch, un conflitto provocato apposta, una pull request. Poi un artefatto con Antigravity, su un branch, fino a Pages.</p>
+<p class="body-text" style="margin-top:1.6rem; color:var(--ink);">Dispensa D7 «Git in una pagina» sul banco.</p>
+    </section>
+
+      <p class="mode" x-show="soloCore">solo incontro 2</p>
+      <p class="counter" x-text="String(posizione()).padStart(2,'0') + ' / ' + String(visibili().length).padStart(2,'0')"></p>
+      <div class="controls">
+        <button class="nav-btn" @click="prev()" aria-label="Slide precedente">‹</button>
+        <div class="rail" role="tablist" aria-label="Naviga tra le slide">
+          <template x-for="i in visibili()" :key="i">
+            <button class="rail-dot" :class="{active: current === i, core: slides[i].core}" @click="goto(i)" role="tab" :aria-selected="current === i" :aria-label="slides[i].label"></button>
+          </template>
+        </div>
+        <button class="nav-btn" @click="next()" aria-label="Slide successiva">›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="presenter" x-data="relatore()" x-init="init()" :data-theme="'dark'" data-theme="dark">
+  <div>
+    <p class="pmeta" x-text="'Slide ' + (current+1) + ' di ' + slides.length"></p>
+    <h1 x-text="slides[current] ? slides[current].label : ''"></h1>
+    <p class="pnotes" x-text="slides[current] ? (slides[current].notes || '—') : ''"></p>
+    <p class="pnext" x-text="'Prossima: ' + (slides[current+1] ? slides[current+1].label : 'fine')"></p>
+  </div>
+  <div>
+    <p class="clock" x-text="orologio"></p>
+    <p class="pmeta" style="margin-top:1rem">Frecce o spazio in questa finestra per avanzare: la presentazione segue.</p>
+  </div>
+</div>
+
+<script>
+  const SLIDES = [{"type": "cover", "label": "Copertina", "core": true, "notes": ""}, {"type": "agenda", "label": "Mappa del deck", "core": true, "notes": ""}, {"type": "contenuto", "label": "Perché il controllo di versione", "core": true, "notes": ""}, {"type": "confronto", "label": "Centralizzato e distribuito", "core": false, "notes": ""}, {"type": "definizione", "label": "Git", "core": true, "notes": ""}, {"type": "griglia", "label": "Parole chiave di Git", "core": true, "notes": ""}, {"type": "schema", "label": "Le tre aree di Git", "core": true, "notes": ""}, {"type": "definizione", "label": "Anatomia di un commit", "core": true, "notes": ""}, {"type": "tecnico", "label": "Staging e commit: i comandi", "core": true, "notes": ""}, {"type": "diff", "label": "Leggere un diff", "core": true, "notes": ""}, {"type": "tecnico", "label": "Cosa non si versiona: .gitignore", "core": true, "notes": ""}, {"type": "schema", "label": "Branch e merge", "core": true, "notes": ""}, {"type": "tecnico", "label": "Comandi dei branch", "core": true, "notes": ""}, {"type": "tecnico", "label": "Il conflitto", "core": true, "notes": ""}, {"type": "confronto", "label": "Tornare indietro: revert e reset", "core": true, "notes": ""}, {"type": "schema", "label": "Remoti: push, fetch, pull", "core": true, "notes": ""}, {"type": "tecnico", "label": "Messaggi frequenti", "core": true, "notes": ""}, {"type": "confronto", "label": "Git e GitHub", "core": true, "notes": ""}, {"type": "griglia", "label": "Un repository su GitHub", "core": true, "notes": ""}, {"type": "griglia", "label": "I file speciali", "core": true, "notes": ""}, {"type": "ciclo", "label": "GitHub Flow", "core": true, "notes": ""}, {"type": "griglia", "label": "Modi di usare GitHub", "core": false, "notes": ""}, {"type": "griglia", "label": "Accedere in modo sicuro", "core": true, "notes": ""}, {"type": "confronto", "label": "Account personali e organizzazioni", "core": false, "notes": ""}, {"type": "esercizio-guidato", "label": "Creare un repository", "core": true, "notes": ""}, {"type": "definizione", "label": "Repository template", "core": true, "notes": ""}, {"type": "schema", "label": "Clone e fork", "core": true, "notes": ""}, {"type": "griglia", "label": "Star, watch, aggiungere file", "core": false, "notes": ""}, {"type": "definizione", "label": "Tag e release", "core": true, "notes": ""}, {"type": "griglia", "label": "Insights: la storia come evidenza", "core": true, "notes": ""}, {"type": "confronto", "label": "Issue, discussioni, pull request", "core": true, "notes": ""}, {"type": "griglia", "label": "Issue: le funzioni utili", "core": true, "notes": ""}, {"type": "schema", "label": "Pull request: base e compare", "core": true, "notes": ""}, {"type": "griglia", "label": "Stati di una pull request", "core": true, "notes": ""}, {"type": "griglia", "label": "Revisionare una pull request", "core": true, "notes": ""}, {"type": "confronto", "label": "Tre modi di unire", "core": false, "notes": ""}, {"type": "griglia", "label": "Revisori obbligatori e CODEOWNERS", "core": false, "notes": ""}, {"type": "griglia", "label": "Notifiche e menzioni", "core": false, "notes": ""}, {"type": "tecnico", "label": "Markdown essenziale", "core": true, "notes": ""}, {"type": "tecnico", "label": "GitHub Flavored Markdown", "core": true, "notes": ""}, {"type": "confronto", "label": "GitHub Pages", "core": true, "notes": ""}, {"type": "definizione", "label": "GitHub Actions", "core": true, "notes": ""}, {"type": "tecnico", "label": "Il workflow dei test", "core": true, "notes": ""}, {"type": "griglia", "label": "Copilot in breve", "core": false, "notes": ""}, {"type": "confronto", "label": "Codespaces e github.dev", "core": false, "notes": ""}, {"type": "griglia", "label": "Etichette e milestone", "core": false, "notes": ""}, {"type": "griglia", "label": "GitHub Projects", "core": true, "notes": ""}, {"type": "tecnico", "label": "Livelli di permesso", "core": false, "notes": ""}, {"type": "definizione", "label": "Proteggere main", "core": false, "notes": ""}, {"type": "griglia", "label": "Sicurezza del repository", "core": false, "notes": ""}, {"type": "griglia", "label": "Open source e comunità", "core": false, "notes": ""}, {"type": "attenzione", "label": "Git e agenti IA", "core": true, "notes": ""}, {"type": "contenuto", "label": "Ogni modifica dell'IA passa da una PR", "core": true, "notes": ""}, {"type": "tecnico", "label": "Una sequenza per la classe", "core": true, "notes": ""}, {"type": "riepilogo", "label": "Riepilogo", "core": true, "notes": ""}, {"type": "griglia", "label": "Se vuoi certificarti", "core": false, "notes": ""}, {"type": "chiusura", "label": "Chiusura", "core": true, "notes": ""}];
+  const canale = ('BroadcastChannel' in window) ? new BroadcastChannel('lab6-inc2-github') : null;
+  const PRESENTER = new URLSearchParams(location.search).has('relatore');
+  if (PRESENTER) document.body.classList.add('is-presenter');
+
+  function deck(){
+    return {
+      current: 0, notesOn: false, theme: 'dark', soloCore: false, slides: SLIDES,
+      init(){
+        if (canale) canale.onmessage = (e) => { if (e.data && typeof e.data.goto === 'number') this.current = e.data.goto; };
+      },
+      visibili(){ return this.slides.map((s,i) => i).filter(i => !this.soloCore || this.slides[i].core); },
+      posizione(){ return this.visibili().indexOf(this.current) + 1; },
+      annuncia(){ if (canale && !PRESENTER) canale.postMessage({ stato: this.current }); },
+      next(){ const v = this.visibili(); const p = v.indexOf(this.current); if (p < v.length - 1) { this.current = v[p+1]; this.annuncia(); } },
+      prev(){ const v = this.visibili(); const p = v.indexOf(this.current); if (p > 0) { this.current = v[p-1]; this.annuncia(); } },
+      goto(i){ this.current = i; this.annuncia(); },
+      toggleCore(){
+        this.soloCore = !this.soloCore;
+        if (this.soloCore && !this.slides[this.current].core) {
+          const succ = this.visibili().find(i => i > this.current);
+          this.current = succ !== undefined ? succ : this.visibili()[0];
+        }
+      },
+      tasto(e){
+        if (PRESENTER) return;
+        const k = e.key;
+        if (k === 'ArrowRight' || k === ' ' || k === 'PageDown'){ this.next(); e.preventDefault(); }
+        else if (k === 'ArrowLeft' || k === 'PageUp'){ this.prev(); }
+        else if (k === 'f' || k === 'F'){ this.toggleCore(); }
+        
+        else if (k === 't' || k === 'T'){ this.theme = this.theme === 'dark' ? 'light' : 'dark'; }
+        
+      },
+      apriRelatore(){ window.open(location.pathname + '?relatore=1', 'relatore', 'width=1100,height=700'); setTimeout(() => this.annuncia(), 800); },
+      toggleFullscreen(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+    }
+  }
+
+  function relatore(){
+    return {
+      current: 0, slides: SLIDES, orologio: '00:00', t0: Date.now(),
+      init(){
+        if (!PRESENTER) return;
+        if (canale) canale.onmessage = (e) => { if (e.data && typeof e.data.stato === 'number') this.current = e.data.stato; };
+        setInterval(() => { const s = Math.floor((Date.now() - this.t0) / 1000); this.orologio = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }, 1000);
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight' || e.key === ' ') { this.vai(this.current + 1); e.preventDefault(); }
+          if (e.key === 'ArrowLeft') this.vai(this.current - 1);
+        });
+      },
+      vai(i){ if (i < 0 || i >= this.slides.length) return; this.current = i; if (canale) canale.postMessage({ goto: i }); }
+    }
+  }
+</script>
+</body>
+</html>

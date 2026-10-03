@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab6 · Incontro 1 — Insegnare a programmare quando la macchina programma</title>
+
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js"></script>
+
+<style>
+  :root{ --font-display:'Fraunces', serif; --font-body:'Inter', sans-serif; --font-mono:'IBM Plex Mono', monospace; }
+  [data-theme="dark"]{
+    --bg:#14161A; --surface:#1D2025; --surface-2:#24272D; --ink:#ECE9E1; --ink-soft:#9CA3A8; --rule:#2C3036;
+    --gold:#E8C177; --gold-soft:#4A4331; --add:#7FBE8F; --add-soft:rgba(127,190,143,.16);
+    --del:#DE8B85; --del-soft:rgba(194,85,74,.22); --link:#6FB8B2; --link-soft:#263936; --canvas:#0F1013;
+  }
+  [data-theme="light"]{
+    --bg:#F1F0EA; --surface:#E7E3D6; --surface-2:#DEDACC; --ink:#1B1D1F; --ink-soft:#5B5F5A; --rule:#D3CFBF;
+    --gold:#8C5F19; --gold-soft:#EEDFB9; --add:#3F7A4E; --add-soft:#DCEBDD;
+    --del:#A23F3A; --del-soft:#F0DAD8; --link:#1F6F6B; --link-soft:#D9E6E4; --canvas:#08090A;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  [x-cloak]{ display:none !important; }
+  html,body{ height:100%; background:var(--canvas); font-family:var(--font-body); color:var(--ink); }
+  code{ font-family:var(--font-mono); font-size:.92em; background:var(--surface); padding:.05em .3em; border-radius:2px; }
+
+  .stage{ position:relative; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--canvas); }
+  .deck{ position:relative; background:var(--bg); width:min(100vw, calc(100vh * 16 / 9)); height:min(100vh, calc(100vw * 9 / 16));
+         box-shadow:0 40px 100px rgba(0,0,0,.5); overflow:hidden; display:flex; transition:background .25s ease; }
+
+  .gutter{ flex:0 0 3.4rem; height:100%; border-right:1px solid var(--rule); display:flex; flex-direction:column; align-items:center; padding-top:clamp(1.6rem,3.5vw,2.6rem); position:relative; }
+  .gutter .idx{ font-family:var(--font-mono); font-size:.74rem; color:var(--ink-soft); }
+  .gutter .idx b{ color:var(--gold); font-weight:500; }
+  .gutter .rail-line{ position:absolute; top:4.4rem; bottom:2rem; left:50%; width:1px; background:var(--rule); }
+
+  .frame{ position:relative; flex:1; height:100%; }
+  .slide{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:clamp(1.8rem,4.2vw,3.6rem); padding-bottom:3.6rem; overflow:hidden; }
+
+  .badge{ position:absolute; top:1.15rem; left:clamp(1.8rem,4.2vw,3.6rem); font-family:var(--font-mono); font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; }
+  .badge.core{ color:var(--add); } .badge.extra{ color:var(--ink-soft); }
+
+  .path{ font-family:var(--font-mono); font-size:clamp(.62rem,.95vw,.74rem); letter-spacing:.02em; color:var(--ink-soft); margin-bottom:1rem; }
+  .path b{ color:var(--gold); font-weight:500; }
+  .title{ font-family:var(--font-display); font-weight:600; font-optical-sizing:auto; line-height:1.05; color:var(--ink); font-size:clamp(1.5rem,3.3vw,2.7rem); max-width:26ch; }
+  .subtitle{ color:var(--ink-soft); font-size:clamp(.92rem,1.4vw,1.15rem); max-width:52ch; margin-top:1rem; line-height:1.55; }
+  .body-text{ font-size:clamp(.9rem,1.3vw,1.1rem); color:var(--ink-soft); line-height:1.6; max-width:72ch; margin-top:1.1rem; }
+  .body-text strong{ color:var(--ink); }
+  .meta-row{ font-family:var(--font-mono); font-size:clamp(.6rem,.9vw,.74rem); color:var(--ink-soft); margin-top:1.8rem; display:flex; gap:1.3rem; flex-wrap:wrap; }
+  .meta-row span{ padding-left:1.3rem; position:relative; } .meta-row span:first-child{ padding-left:0; }
+  .meta-row span:not(:first-child)::before{ content:"·"; position:absolute; left:.4rem; color:var(--rule); }
+
+  .slide[data-type="cover"] .title{ max-width:16ch; font-size:clamp(1.9rem,4.2vw,3.4rem); }
+  .slide[data-type="cover"] .path{ color:var(--gold); }
+
+  .agenda-list{ list-style:none; margin-top:1.5rem; max-width:60ch; }
+  .agenda-list li{ position:relative; padding:.45rem 0 .45rem 2.1rem; font-size:clamp(.86rem,1.25vw,1.02rem); color:var(--ink); }
+  .agenda-list li::before{ content:attr(data-n); position:absolute; left:0; top:.45rem; font-family:var(--font-mono); font-size:.68rem; color:var(--bg); background:var(--link);
+    width:1.4rem; height:1.4rem; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .agenda-list li:not(:last-child)::after{ content:""; position:absolute; left:.69rem; top:1.95rem; height:calc(100% - 1.1rem); width:1px; background:var(--rule); }
+
+  .bullet-list{ list-style:none; margin-top:1.4rem; max-width:70ch; }
+  .bullet-list li{ position:relative; padding:.42rem 0 .42rem 1.5rem; font-size:clamp(.92rem,1.4vw,1.14rem); color:var(--ink); line-height:1.5; }
+  .bullet-list li::before{ content:"›"; position:absolute; left:0; top:.38rem; font-family:var(--font-mono); color:var(--gold); font-size:1rem; }
+
+  .slide[data-type="definizione"] .deflabel{ font-family:var(--font-display); font-weight:600; font-size:clamp(1.4rem,2.8vw,2.2rem); color:var(--gold); }
+  .defbox{ margin-top:1.4rem; border-left:2px solid var(--gold); background:var(--gold-soft); padding:1.1rem 1.4rem; max-width:74ch;
+           font-size:clamp(.9rem,1.3vw,1.08rem); color:var(--ink); line-height:1.65; }
+  .defbox code{ background:transparent; }
+
+  .compare{ margin-top:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; max-width:100%; }
+  .compare-col{ border-top:2px solid var(--rule); padding-top:.8rem; }
+  .compare-col.del{ border-top-color:var(--del); } .compare-col.add{ border-top-color:var(--add); } .compare-col.link{ border-top-color:var(--link); }
+  .compare-col h3{ font-family:var(--font-mono); font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:.6rem; }
+  .compare-col.del h3{ color:var(--del); } .compare-col.add h3{ color:var(--add); } .compare-col.link h3{ color:var(--link); }
+  .compare-col ul{ padding-left:1.1rem; color:var(--ink); font-size:clamp(.9rem,1.3vw,1.08rem); line-height:1.6; }
+
+  .step-list{ list-style:none; margin-top:1.4rem; max-width:64ch; counter-reset:step; }
+  .step-list li{ counter-increment:step; position:relative; padding:.45rem 0 .45rem 2.5rem; font-size:clamp(.92rem,1.35vw,1.12rem); color:var(--ink); line-height:1.5; }
+  .step-list li::before{ content:counter(step); position:absolute; left:0; top:.32rem; font-family:var(--font-mono); font-weight:500; font-size:.8rem; color:var(--link);
+    border:1px solid var(--link); width:1.6rem; height:1.6rem; border-radius:3px; display:flex; align-items:center; justify-content:center; }
+  .note{ margin-top:1.1rem; font-family:var(--font-mono); font-size:clamp(.68rem,1vw,.82rem); color:var(--ink-soft); max-width:100%; line-height:1.5; }
+
+  .code-block{ margin-top:1.2rem; background:var(--surface); border:1px solid var(--rule); color:var(--ink); font-family:var(--font-mono);
+               font-size:clamp(.72rem,1.15vw,.98rem); padding:1rem 1.4rem; max-width:100%; line-height:1.6; overflow:auto; white-space:pre; }
+  .code-block .cm{ color:var(--ink-soft); } .code-block .op{ color:var(--gold); }
+  .code-block .k-del{ color:var(--del); font-weight:600; } .code-block .k-add{ color:var(--add); font-weight:600; } .code-block .k-mid{ color:var(--gold); font-weight:600; }
+
+  .tab{ margin-top:1.2rem; border-collapse:collapse; max-width:100%; width:100%; font-size:clamp(.8rem,1.2vw,1.02rem); }
+  .tab th{ text-align:left; font-family:var(--font-mono); font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);
+           border-bottom:2px solid var(--gold); padding:.4rem .6rem; }
+  .tab td{ border-bottom:1px solid var(--rule); padding:.42rem .6rem; color:var(--ink); vertical-align:top; line-height:1.45; }
+
+  .slide[data-type="attenzione"]{ background:var(--canvas); }
+  .slide[data-type="attenzione"] .path{ color:var(--gold); }
+  .slide[data-type="attenzione"] .quote{ font-family:var(--font-display); font-weight:600; font-style:italic; color:#F4F1E9; font-size:clamp(1.4rem,3.2vw,2.5rem); max-width:22ch; line-height:1.18; }
+  .slide[data-type="attenzione"] .body-text{ color:#A9A497; }
+
+  .slide[data-type="riepilogo"] .bullet-list li::before{ color:var(--add); content:"✓"; font-size:.85rem; top:.48rem; }
+  .slide[data-type="chiusura"] .title{ color:var(--gold); }
+
+  .cycle{ position:relative; width:min(38vw,21rem); aspect-ratio:1/1; margin:1rem auto 0; }
+  .cycle svg.ring circle{ fill:none; stroke:var(--rule); stroke-width:1.5; stroke-dasharray:2 6; }
+  .cycle svg.ring{ position:absolute; inset:0; overflow:visible; }
+  .cycle-node{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:.3rem; width:7rem; text-align:center; }
+  .cycle-node .dot{ width:2.2rem; height:2.2rem; border-radius:50%; background:var(--bg); border:1.5px solid var(--link); display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:.72rem; color:var(--link); }
+  .cycle-node.current .dot{ background:var(--gold); border-color:var(--gold); color:var(--bg); }
+  .cycle-node span.label{ font-size:.74rem; color:var(--ink); line-height:1.2; background:var(--bg); }
+  .cycle-caption{ margin-top:1rem; font-family:var(--font-mono); font-size:.7rem; color:var(--ink-soft); text-align:center; }
+
+  .diff-file{ margin-top:1.4rem; display:flex; align-items:center; gap:.6rem; font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft); }
+  .diff-file .dot{ width:.5rem; height:.5rem; border-radius:50%; } .diff-file .dot.add{ background:var(--add); } .diff-file .dot.del{ background:var(--del); margin-left:.8rem; }
+  .diff-block{ margin-top:.6rem; max-width:72ch; font-family:var(--font-mono); font-size:clamp(.72rem,1.05vw,.88rem); line-height:1.7; background:var(--surface); border:1px solid var(--rule); padding:.9rem 0; overflow-x:auto; }
+  .diff-line{ padding:.08rem 1.3rem; white-space:pre; color:var(--ink-soft); }
+  .diff-line.add{ background:var(--add-soft); color:var(--ink); } .diff-line.add::before{ content:"+ "; color:var(--add); }
+  .diff-line.del{ background:var(--del-soft); color:var(--ink-soft); text-decoration:line-through; text-decoration-color:var(--del); } .diff-line.del::before{ content:"- "; color:var(--del); }
+  .diff-line.ctx::before{ content:"  "; }
+
+  .grid-cards{ margin-top:1.4rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(12rem,1fr)); gap:1.2rem 1.8rem; max-width:100%; }
+  .grid-card{ border-top:2px solid var(--rule); padding-top:.55rem; }
+  .grid-card.gold{ border-top-color:var(--gold); } .grid-card.link{ border-top-color:var(--link); } .grid-card.del{ border-top-color:var(--del); } .grid-card.add{ border-top-color:var(--add); }
+  .grid-card h4{ font-family:var(--font-mono); font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink); margin-bottom:.3rem; }
+  .grid-card p{ font-size:clamp(.82rem,1.22vw,1rem); color:var(--ink-soft); line-height:1.45; }
+  .grid-card p code{ font-size:.85em; }
+
+  /* ---- schema: SVG che eredita i colori del tema ---- */
+  svg.schema{ width:100%; max-width:100%; height:auto; margin-top:1rem; overflow:visible; }
+  svg.schema .box{ fill:var(--surface); stroke:var(--rule); stroke-width:1.5; }
+  svg.schema .box.gold{ stroke:var(--gold); } svg.schema .box.link{ stroke:var(--link); } svg.schema .box.add{ stroke:var(--add); }
+  svg.schema .t{ fill:var(--ink); font-family:var(--font-display); font-weight:600; font-size:22px; text-anchor:middle; }
+  svg.schema .s{ fill:var(--ink-soft); font-family:var(--font-body); font-size:14px; text-anchor:middle; }
+  svg.schema .c{ fill:var(--gold); font-family:var(--font-mono); font-size:14px; text-anchor:middle; }
+  svg.schema .a{ stroke:var(--gold); stroke-width:2; fill:none; } svg.schema .a.back{ stroke:var(--link); stroke-dasharray:6 5; }
+  svg.schema .m{ fill:var(--gold); }
+  svg.schema .l{ stroke-width:3; fill:none; } svg.schema .l.main{ stroke:var(--link); } svg.schema .l.br{ stroke:var(--gold); }
+  svg.schema .n{ fill:var(--bg); stroke:var(--link); stroke-width:3; } svg.schema .n.b{ stroke:var(--gold); } svg.schema .n.m{ fill:var(--add); stroke:var(--add); }
+  svg.schema .lab{ fill:var(--link); font-family:var(--font-mono); font-size:16px; } svg.schema .lab.b{ fill:var(--gold); }
+
+  .tab.compatta{ font-size:clamp(.72rem,1.05vw,.9rem); } .tab.compatta td{ padding:.3rem .5rem; }
+  .liv{ display:inline-block; font-family:var(--font-mono); font-size:.72em; padding:.05em .45em; border:1px solid var(--rule); border-radius:2px; }
+  .liv.l0{ color:var(--del); border-color:var(--del); } .liv.l1, .liv.l2{ color:var(--gold); border-color:var(--gold); }
+  .liv.l3{ color:var(--link); border-color:var(--link); } .liv.l4{ color:var(--add); border-color:var(--add); }
+  svg.schema .box.del{ stroke:var(--del); } svg.schema .fillsoft{ fill:var(--gold-soft); }
+  svg.schema .tl{ fill:var(--ink); font-family:var(--font-body); font-size:15px; text-anchor:start; }
+  .print-notes{ display:none; margin-top:1.1rem; padding-top:.8rem; border-top:1px dashed var(--rule); font-family:var(--font-mono); font-size:.7rem; color:var(--ink-soft); max-width:80ch; line-height:1.55; }
+  .notes-on .print-notes{ display:block; }
+  .print-notes .notes-label{ display:block; text-transform:uppercase; letter-spacing:.08em; color:var(--gold); margin-bottom:.3rem; font-size:.62rem; }
+
+  .toolbar{ position:absolute; top:1rem; right:1rem; display:flex; gap:.4rem; z-index:5; flex-wrap:wrap; justify-content:flex-end; }
+  .tbtn{ font-family:var(--font-mono); font-size:.62rem; letter-spacing:.05em; background:var(--surface); border:1px solid var(--rule); color:var(--ink-soft); padding:.36rem .6rem; cursor:pointer; border-radius:2px; }
+  .tbtn:hover{ color:var(--ink); border-color:var(--ink-soft); }
+  .tbtn.on{ color:var(--bg); background:var(--gold); border-color:var(--gold); }
+  .tbtn:focus-visible, .nav-btn:focus-visible, .rail-dot:focus-visible{ outline:2px solid var(--link); outline-offset:2px; }
+
+  .controls{ position:absolute; left:0; right:0; bottom:.9rem; display:flex; align-items:center; justify-content:center; gap:.8rem; pointer-events:none; }
+  .controls > *{ pointer-events:auto; }
+  .nav-btn{ width:1.9rem; height:1.9rem; border-radius:50%; border:1px solid var(--rule); background:var(--surface); color:var(--ink-soft); font-family:var(--font-mono); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .nav-btn:hover{ border-color:var(--link); color:var(--link); }
+  .rail{ display:flex; align-items:center; gap:.32rem; padding:.28rem .7rem; background:var(--surface); border:1px solid var(--rule); border-radius:999px; max-width:70%; flex-wrap:wrap; justify-content:center; }
+  .rail-dot{ width:.38rem; height:.38rem; border-radius:50%; background:transparent; border:1.2px solid var(--ink-soft); cursor:pointer; }
+  .rail-dot.core{ border-color:var(--add); }
+  .rail-dot.active{ background:var(--link); border-color:var(--link); width:.54rem; height:.54rem; }
+  .counter{ font-family:var(--font-mono); font-size:.66rem; color:var(--ink-soft); position:absolute; right:1.1rem; bottom:1.1rem; }
+  .mode{ font-family:var(--font-mono); font-size:.6rem; color:var(--add); position:absolute; left:1rem; bottom:1.1rem; text-transform:uppercase; letter-spacing:.06em; }
+
+  /* ---- vista relatore ---- */
+  .presenter{ display:none; }
+  body.is-presenter .stage{ display:none; }
+  body.is-presenter .presenter{ display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; padding:1.5rem; min-height:100vh; background:var(--bg); color:var(--ink); }
+  .presenter h1{ font-family:var(--font-display); font-size:1.6rem; }
+  .presenter .pnotes{ font-size:1.15rem; line-height:1.6; white-space:pre-wrap; }
+  .presenter .pmeta{ font-family:var(--font-mono); color:var(--ink-soft); font-size:.8rem; margin-bottom:.8rem; }
+  .presenter .pnext{ font-family:var(--font-mono); color:var(--gold); margin-top:1.2rem; }
+  .presenter .clock{ font-family:var(--font-mono); font-size:2.4rem; color:var(--gold); }
+
+  @media (max-width:720px){ .compare{ grid-template-columns:1fr; } .grid-cards{ grid-template-columns:1fr 1fr; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+  @media print{
+    @page{ size:landscape; margin:0; }
+    html,body{ background:var(--bg); height:auto; }
+    .stage{ position:static; width:auto; height:auto; display:block; background:none; }
+    .toolbar,.controls,.counter,.mode{ display:none !important; }
+    .deck{ position:static; width:auto; height:auto; box-shadow:none; overflow:visible; display:block; }
+    .gutter{ display:none; }
+    .slide{ display:flex !important; position:relative; inset:auto; width:100%; height:100vh; page-break-after:always; break-after:page; }
+    .print-notes{ display:block !important; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="stage" x-data="deck()" x-init="init()" x-cloak :data-theme="theme"
+     @keydown.window="tasto($event)">
+
+  <div class="toolbar">
+    <button class="tbtn" :class="{on: soloCore}" @click="toggleCore()" x-text="soloCore ? '● SOLO INCONTRO 1 (F)' : '○ DECK COMPLETO (F)'"></button>
+    <button class="tbtn" :class="{on: theme==='light'}" @click="theme = theme==='dark' ? 'light' : 'dark'" x-text="theme==='dark' ? '◐ LIGHT (T)' : '◑ DARK (T)'"></button>
+    <button class="tbtn" @click="toggleFullscreen()">SCHERMO INTERO</button>
+  </div>
+
+  <div class="deck" :class="{'notes-on': notesOn}" role="region" aria-roledescription="presentazione" aria-label="Lab6 · Incontro 1 — Insegnare a programmare quando la macchina programma" :data-theme="theme">
+    <div class="gutter">
+      <span class="idx"><b x-text="String(posizione()).padStart(2,'0')"></b>/<span x-text="String(visibili().length).padStart(2,'0')"></span></span>
+      <div class="rail-line"></div>
+    </div>
+    <div class="frame">
+
+
+    <!-- 00 · COVER · Copertina -->
+    <section class="slide" data-type="cover" x-show="current === 0" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/00-cover.md</p>
+<h1 class="title">Insegnare a programmare quando la macchina programma</h1>
+<p class="subtitle">Che cosa deve ancora imparare uno studente, se l'IA scrive codice corretto in pochi secondi? E come lo aiutiamo a impararlo senza che l'IA lo impari al posto suo?</p>
+<div class="meta-row"><span>INCONTRO 1 DI 4</span><span>MARTEDÌ 29 SETTEMBRE</span><span>4 ORE</span></div>
+    </section>
+
+    <!-- 01 · ATTENZIONE · La frase del laboratorio -->
+    <section class="slide" data-type="attenzione" x-show="current === 1" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/01-apertura/frase.md</p>
+<p class="quote">«Non impariamo a programmare con l'IA: impariamo a insegnare a programmare quando l'IA esiste.»</p>
+<p class="body-text">E i nostri studenti la usano già.</p>
+    </section>
+
+    <!-- 02 · CONTENUTO · Sondaggio lampo -->
+    <section class="slide" data-type="contenuto" x-show="current === 2" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/01-apertura/sondaggio.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Quattro domande, anonime, dal telefono</h2>
+<ol class="step-list"><li>Nelle tue classi, quanti studenti usano già l'IA per i compiti di programmazione?</li><li>Oggi, nei tuoi compiti, l'uso dell'IA è vietato, tollerato, non regolato o incoraggiato?</li><li>Hai già usato un'IA per preparare materiali per le tue lezioni?</li><li>Completa: «La cosa che mi preoccupa di più è…»</li></ol>
+<p class="note">QR del modulo: proiettarlo a parte. I risultati si guardano subito.</p>
+    </section>
+
+    <!-- 03 · TECNICO · I quattro incontri -->
+    <section class="slide" data-type="tecnico" x-show="current === 3" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/01-apertura/mappa.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Quattro incontri, quattro domande</h2>
+<table class="tab"><thead><tr><th>Quando</th><th>Incontro</th><th>Domanda</th></tr></thead><tbody><tr><td>mar 29/9 · 4h</td><td><strong>1</strong> Insegnare a programmare quando la macchina programma</td><td>Che cosa deve ancora imparare lo studente?</td></tr><tr><td>gio 1/10 · 4h</td><td><strong>2</strong> Git, Antigravity e il docente autore</td><td>Come versiono e produco materiali migliori, e come insegno Git?</td></tr><tr><td>ven 2/10 · 4h</td><td><strong>3</strong> Machine learning con Python in classe</td><td>Come insegno il ML quando l'IA scrive l'intera pipeline?</td></tr><tr><td>lun 5/10 · 3h</td><td><strong>4</strong> Valutare, regolare, consegnare</td><td>Come verifico che abbiano capito, e con quali regole?</td></tr></tbody></table>
+    </section>
+
+    <!-- 04 · GRIGLIA · Il prodotto finale -->
+    <section class="slide" data-type="griglia" x-show="current === 4" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/01-apertura/prodotto.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Alla fine: un kit per una vostra UdA, su GitHub</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Scheda UdA</h4><p>Obiettivi, misconcezioni, lezioni con il livello di IA di ciascuna.</p></div><div class="grid-card gold"><h4>Agenti</h4><p>Gem per gli studenti, collaudati: si comincia oggi.</p></div><div class="grid-card add"><h4>Artefatto</h4><p>Una pagina interattiva pubblicata su GitHub Pages (Incontro 2).</p></div><div class="grid-card link"><h4>Notebook ML</h4><p>Facoltativo (Incontro 3).</p></div><div class="grid-card gold"><h4>Verifiche</h4><p>Una AI-proof e una AI-powered con rubrica (Incontro 4).</p></div><div class="grid-card del"><h4>Patto d'aula</h4><p>Le regole sull'IA scritte per gli studenti (Incontro 4).</p></div></div>
+    </section>
+
+    <!-- 05 · ATTENZIONE · Le regole del laboratorio -->
+    <section class="slide" data-type="attenzione" x-show="current === 5" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/01-apertura/regole.md</p>
+<p class="quote">Nei prompt non scriviamo mai nomi, voti o situazioni di studenti veri.</p>
+<p class="body-text">Mai, neanche con l'account della scuola. Si lavora individualmente, nessun compito a casa: ogni incontro si chiude con un commit sul proprio kit.</p>
+    </section>
+
+    <!-- 06 · CONTENUTO · La consegna -->
+    <section class="slide" data-type="contenuto" x-show="current === 6" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/02-innesco/consegna.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Una consegna di terza</h2>
+<div class="defbox" style="margin-top:1.4rem;">Scrivi una funzione Python <code>totale_scontrino(prezzi)</code> che riceve la lista dei prezzi degli articoli (senza IVA) e restituisce il totale da pagare: aggiungi l'IVA al 22% e, se il totale supera 50 euro, applica uno sconto del 10%.</div>
+<p class="body-text">Avete davanti tre consegne «di studenti». Date un voto con la griglia che usate di solito e scrivete chi, secondo voi, ha imparato di più. <strong>Non eseguite il codice</strong>: correggete come correggereste un compito.</p>
+    </section>
+
+    <!-- 07 · TECNICO · Studente A -->
+    <section class="slide" data-type="tecnico" x-show="current === 7" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/02-innesco/studente-a.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Studente A — scritto a mano</h2>
+<pre class="code-block">def totale_scontrino(prezzi):
+    totale = 0
+    for i in range(1, len(prezzi)):
+        totale = totale + prezzi[i]
+    totale = totale * 1.22
+    if totale &gt; 50:
+        totale = totale - totale * 0.1
+    return totale</pre>
+<p class="body-text"><em>«Scorro la lista con un for e sommo i prezzi, poi metto l'IVA e se supera 50 faccio lo sconto.»</em></p>
+    </section>
+
+    <!-- 08 · TECNICO · Studente B -->
+    <section class="slide" data-type="tecnico" x-show="current === 8" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/02-innesco/studente-b.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Studente B — generato con un'IA</h2>
+<pre class="code-block">IVA = 0.22
+SOGLIA_SCONTO = 50
+SCONTO = 0.10
+
+def totale_scontrino(prezzi: list[float]) -&gt; float:
+    <span class="cm">"""Restituisce il totale ivato, scontato del 10% se supera 50 €."""</span>
+    lordo = sum(prezzi) * (1 + IVA)
+    if lordo &gt; SOGLIA_SCONTO:
+        lordo *= (1 - SCONTO)
+    return round(lordo, 2)</pre>
+<p class="body-text"><em>Nessuna spiegazione allegata.</em></p>
+    </section>
+
+    <!-- 09 · TECNICO · Studente C -->
+    <section class="slide" data-type="tecnico" x-show="current === 9" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/02-innesco/studente-c.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Studente C — generato con un'IA</h2>
+<pre class="code-block">def totale_scontrino(prezzi):
+    totale = sum(prezzi)
+    if totale &gt; 50:
+        totale = totale * 0.9
+    return round(totale * 1.22, 2)</pre>
+<p class="body-text"><em>«Ho usato un ciclo for che scorre la lista e somma i prezzi, poi aggiungo l'IVA e se il totale supera 50 applico lo sconto del 10%.»</em></p>
+    </section>
+
+    <!-- 10 · TECNICO · Eseguiamo -->
+    <section class="slide" data-type="tecnico" x-show="current === 10" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/02-innesco/esecuzione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Eseguiamo con <code>[10, 20, 15]</code></h2>
+<table class="tab"><thead><tr><th>Studente</th><th>Risultato</th><th>Cosa è successo</th></tr></thead><tbody><tr><td>A</td><td><code>42.699999999999996</code></td><td>Salta il primo prezzo (<code>range(1, …)</code>): 35 × 1,22. Errore di uno, nessun arrotondamento</td></tr><tr><td>B</td><td><code>49.41</code></td><td>45 × 1,22 = 54,9: supera 50, sconto del 10% <strong>sul totale con IVA</strong></td></tr><tr><td>C</td><td><code>54.9</code></td><td>45 non supera 50: niente sconto. Sconto <strong>sul totale senza IVA</strong>. E il ciclo for della spiegazione non c'è</td></tr></tbody></table>
+<p class="note">python3 tre_versioni.py · con la lista vuota tutti e tre restituiscono 0</p>
+    </section>
+
+    <!-- 11 · CONFRONTO · La consegna era ambigua -->
+    <section class="slide" data-type="confronto" x-show="current === 11" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/02-innesco/ambigua.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">B e C: chi ha sbagliato?</h2>
+<div class="compare"><div class="compare-col link"><h3>Lettura di B: prima l'IVA, poi lo sconto</h3><ul><li>«se il totale supera 50» = il totale con IVA</li><li>54,90 &gt; 50 → sconto → <strong>49,41</strong></li></ul></div><div class="compare-col gold"><h3>Lettura di C: prima lo sconto, poi l'IVA</h3><ul><li>«se il totale supera 50» = la somma dei prezzi</li><li>45 ≤ 50 → niente sconto → <strong>54,90</strong></li></ul></div></div>
+<p class="body-text">Nessuno dei due: <strong>la consegna era ambigua</strong>, e nessuno dei due studenti se n'è accorto. L'ha scritta un docente.</p>
+    </section>
+
+    <!-- 12 · CONTENUTO · Antigravity risolve -->
+    <section class="slide" data-type="contenuto" x-show="current === 12" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/02-innesco/antigravity.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">La stessa consegna, ad Antigravity</h2>
+<ul class="bullet-list"><li>Prima un <strong>piano</strong>, poi il <strong>codice</strong>, poi i <strong>test</strong>: in meno di un minuto.</li><li>Domanda: ha applicato lo sconto prima o dopo l'IVA? <strong>Ce l'ha chiesto?</strong></li><li>È ciò che hanno a disposizione i nostri studenti maggiorenni; i minorenni hanno qualcosa di molto simile in Gemini.</li></ul>
+    </section>
+
+    <!-- 13 · ESERCIZIO-GUIDATO · Tre domande -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 13" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/02-innesco/domande.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Tre domande</h2>
+<ol class="step-list"><li>La nostra griglia misurava la <strong>comprensione</strong> o il <strong>prodotto</strong>?</li><li>Che cosa avremmo dovuto chiedere per sapere chi ha capito?</li><li>Che cosa ci dice il fatto che la consegna fosse ambigua?</li></ol>
+    </section>
+
+    <!-- 14 · ATTENZIONE · Conclusione del blocco -->
+    <section class="slide" data-type="attenzione" x-show="current === 14" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/02-innesco/lavagna.md</p>
+<p class="quote">Il prodotto non basta più come prova di apprendimento.</p>
+<p class="body-text">Servono tracce del processo e momenti in cui la comprensione si vede.</p>
+    </section>
+
+    <!-- 15 · CONFRONTO · Cosa cambia per chi impara -->
+    <section class="slide" data-type="confronto" x-show="current === 15" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/03-teoria/01-cosa-cambia.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">L'IA sposta il valore</h2>
+<div class="compare"><div class="compare-col del"><h3>Prima valeva soprattutto</h3><ul><li>scrivere il codice</li><li>ricordare la sintassi</li><li>consegnare un programma che funziona</li></ul></div><div class="compare-col add"><h3>Ora vale soprattutto</h3><ul><li><strong>specificare</strong> che cosa deve fare</li><li><strong>leggere</strong> e tracciare il codice</li><li><strong>verificare</strong> con prove e test</li><li><strong>spiegare</strong> perché funziona</li></ul></div></div>
+<p class="note">Per valutare il codice dell'IA serve saperlo leggere: le basi diventano più importanti, non meno. (Taulli, cap. 1, in parafrasi)</p>
+    </section>
+
+    <!-- 16 · CONTENUTO · La ricerca sui principianti -->
+    <section class="slide" data-type="contenuto" x-show="current === 16" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/03-teoria/02-ricerca.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Cosa suggeriscono gli studi sui principianti</h2>
+<ul class="bullet-list"><li>Chi ha buone strategie metacognitive trae vantaggio dagli assistenti.</li><li>Chi è più fragile rischia l'<strong>illusione di competenza</strong>: «capisco quando lo leggo, non so rifarlo».</li><li>Una scelta progettuale possibile: assistenti <strong>vincolati</strong> a non dare soluzioni (per esempio l'esperienza di CS50).</li><li>I rilevatori di codice generato non sono affidabili: non si usano per sanzionare.</li></ul>
+<p class="note">Sintesi prudente: gli studi finora suggeriscono, non dimostrano.</p>
+    </section>
+
+    <!-- 17 · SCHEMA · Lo spettro di integrazione -->
+    <section class="slide" data-type="schema" x-show="current === 17" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/03-teoria/03-spettro.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Lo spettro di integrazione</h2>
+
+<svg class="schema" viewBox="0 0 900 300" role="img" aria-label="Lo spettro di integrazione: cinque livelli, da 0 IA esclusa a 4 IA collaboratrice">
+  <defs><marker id="fs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m"/></marker></defs>
+  <rect x="5" y="30" width="172" height="176" rx="4" class="box del"/>
+  <text x="91" y="66" class="c" style="font-size:22px">0</text><text x="91" y="98" class="t" style="font-size:18px">IA esclusa</text><text x="91" y="148" class="s" style="font-size:13px">tracing su carta,</text><text x="91" y="167" class="s" style="font-size:13px">codice proprio</text>
+  <rect x="184" y="30" width="172" height="176" rx="4" class="box gold"/>
+  <text x="270" y="66" class="c" style="font-size:22px">1</text><text x="270" y="98" class="t" style="font-size:18px">IA che spiega</text><text x="270" y="148" class="s" style="font-size:13px">tutor che fa domande,</text><text x="270" y="167" class="s" style="font-size:13px">non dà soluzioni</text>
+  <rect x="363" y="30" width="172" height="176" rx="4" class="box gold"/>
+  <text x="449" y="66" class="c" style="font-size:22px">2</text><text x="449" y="98" class="t" style="font-size:18px">IA che dà</text><text x="449" y="120" class="t" style="font-size:18px">feedback</text><text x="449" y="148" class="s" style="font-size:13px">revisore sul codice</text><text x="449" y="167" class="s" style="font-size:13px">dello studente</text>
+  <rect x="542" y="30" width="172" height="176" rx="4" class="box link"/>
+  <text x="628" y="66" class="c" style="font-size:22px">3</text><text x="628" y="98" class="t" style="font-size:18px">IA come oggetto</text><text x="628" y="120" class="t" style="font-size:18px">di studio</text><text x="628" y="148" class="s" style="font-size:13px">codice dell'IA</text><text x="628" y="167" class="s" style="font-size:13px">da valutare</text>
+  <rect x="721" y="30" width="172" height="176" rx="4" class="box add"/>
+  <text x="807" y="66" class="c" style="font-size:22px">4</text><text x="807" y="98" class="t" style="font-size:18px">IA</text><text x="807" y="120" class="t" style="font-size:18px">collaboratrice</text><text x="807" y="148" class="s" style="font-size:13px">genera codice da una</text><text x="807" y="167" class="s" style="font-size:13px">specifica dello studente</text>
+  <line x1="20" y1="244" x2="880" y2="244" class="a" marker-end="url(#fs)"/>
+  <text x="450" y="234" class="c">più lavoro affidato all'IA → più evidenze richieste allo studente</text>
+  <text x="450" y="284" class="s">Dietro le quinte, sempre: il docente autore (Antigravity) che prepara materiali e agenti</text>
+</svg>
+    </section>
+
+    <!-- 18 · TECNICO · Lo spettro sull'UdA demo -->
+    <section class="slide" data-type="tecnico" x-show="current === 18" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/03-teoria/04-spettro-demo.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Lo spettro su «gli scontrini del negozio»</h2>
+<table class="tab compatta"><thead><tr><th>Livello</th><th>Attività</th><th>Evidenza a carico dello studente</th></tr></thead><tbody><tr><td><span class="liv l0">0</span> IA esclusa</td><td>Tracing su carta di un ciclo</td><td>Previsione, tracing, codice proprio</td></tr><tr><td><span class="liv l1">1</span> IA che spiega</td><td>Gem tutor sull'accumulatore</td><td>Risposta e spiegazione con parole proprie</td></tr><tr><td><span class="liv l2">2</span> IA che dà feedback</td><td>Gem revisore con rubrica</td><td>Codice, correzioni, scelte motivate</td></tr><tr><td><span class="liv l3">3</span> IA oggetto di studio</td><td>«Trova l'errore dell'IA»</td><td>Diagnosi, prova, correzione motivata</td></tr><tr><td><span class="liv l4">4</span> IA collaboratrice</td><td>Mini-progetto con prompt log e orale</td><td>Specifica, test, prompt log, spiegazione orale</td></tr></tbody></table>
+    </section>
+
+    <!-- 19 · CONFRONTO · AI-proof e AI-powered -->
+    <section class="slide" data-type="confronto" x-show="current === 19" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/03-teoria/05-etichette.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">AI-proof e AI-powered: etichette delle fasi, non delle persone</h2>
+<div class="compare"><div class="compare-col del"><h3>AI-proof</h3><ul><li>la comprensione va dimostrata <strong>senza IA</strong></li><li>in classe, su carta o in un editor senza completamento</li><li>esempio: tracing su carta (livello 0), la verifica</li></ul></div><div class="compare-col add"><h3>AI-powered</h3><ul><li>l'IA è ammessa, <strong>le tracce del processo sono obbligatorie</strong></li><li>specifica, test, prompt log, commit, orale</li><li>esempio: mini-progetto con difesa orale (livello 4)</li></ul></div></div>
+    </section>
+
+    <!-- 20 · ATTENZIONE · La regola d'oro -->
+    <section class="slide" data-type="attenzione" x-show="current === 20" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/03-teoria/06-regola-d-oro.md</p>
+<p class="quote">Più lo studente è principiante sull'argomento, più in basso si parte.</p>
+<p class="body-text">È realistico nelle vostre classi? Che cosa succede se vietiamo e basta?</p>
+    </section>
+
+    <!-- 21 · CONFRONTO · Specificità e contesto -->
+    <section class="slide" data-type="confronto" x-show="current === 21" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/04-prompting/4a-contesto.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4a · Stesso bisogno, due prompt</h2>
+<div class="compare"><div class="compare-col del"><h3>Vago</h3><ul><li><code>Spiegami i cicli for in Python.</code></li></ul></div><div class="compare-col add"><h3>Strutturato</h3><ul><li><strong>Ruolo</strong>: docente di un istituto tecnico economico</li><li><strong>Destinatari</strong>: terza, sanno variabili, input e print; mai visto i cicli</li><li><strong>Compito</strong>: il for che scorre una lista di prezzi, esempio sugli scontrini</li><li><strong>Vincoli</strong>: 150 parole, codice di massimo 4 righe, niente termini non spiegati</li><li><strong>Chiusura</strong>: una domanda di verifica risolvibile senza eseguire</li></ul></div></div>
+<p class="note">Due chat separate. Confronto: lunghezza · livello · costrutti mai visti (sum, enumerate…) · qualità della domanda finale.</p>
+    </section>
+
+    <!-- 22 · TECNICO · Few-shot -->
+    <section class="slide" data-type="tecnico" x-show="current === 22" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/04-prompting/4b-few-shot.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4b · Few-shot: l'IA imita il vostro stile</h2>
+<pre class="code-block">Ecco un esercizio che uso con la mia classe terza:
+[INCOLLA IL TUO ESERCIZIO]
+Scrivimi tre esercizi dello stesso tipo, con la stessa lunghezza,
+lo stesso tono e lo stesso contesto (negozio), che allenino la
+stessa abilità. Non aggiungere le soluzioni.</pre>
+<p class="body-text">Poi, in una chat nuova: <code>Scrivimi tre esercizi sui cicli for per una classe terza.</code> Quale dei due set usereste domani mattina?</p>
+    </section>
+
+    <!-- 23 · TECNICO · Scomporre prima di produrre -->
+    <section class="slide" data-type="tecnico" x-show="current === 23" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/04-prompting/4c-scomporre.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4c · Scomporre prima di produrre</h2>
+<pre class="code-block">Prima di scrivere qualunque spiegazione, elenca:
+1) i prerequisiti che uno studente deve avere per capire i cicli su liste;
+2) le tre misconcezioni più frequenti dei principianti su questo argomento;
+3) per ciascuna, un esempio di codice sbagliato che uno studente potrebbe scrivere.
+<span class="op">Poi aspetta la mia conferma.</span></pre>
+<p class="body-text">Cerchiate <strong>una misconcezione che manca</strong> e <strong>una che non avete mai visto</strong> in classe. Servono nel blocco 7.</p>
+    </section>
+
+    <!-- 24 · DIFF · Domande tendenziose -->
+    <section class="slide" data-type="diff" x-show="current === 24" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/04-prompting/4d-premessa.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4d · Una premessa sbagliata</h2>
+<p class="diff-file"><span class="dot del"></span>premessa falsa<span class="dot add"></span>versione neutra</p>
+<div class="diff-block">
+<div class="diff-line del" style="white-space:pre-wrap">Come si usa il metodo .sum() delle liste in Python per calcolare il totale di uno scontrino?</div>
+<div class="diff-line add" style="white-space:pre-wrap">Quali modi ci sono in Python per calcolare la somma degli elementi di una lista?</div>
+</div>
+<p class="body-text">Le liste non hanno un metodo <code>.sum()</code>: <code>AttributeError: 'list' object has no attribute 'sum'</code>. Il modello corregge la premessa o la asseconda? Gli studenti chiedono spesso con premesse sbagliate.</p>
+    </section>
+
+    <!-- 25 · GRIGLIA · Cosa non si scrive -->
+    <section class="slide" data-type="griglia" x-show="current === 25" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/04-prompting/4e-dati.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">4e · Cosa non si scrive in un prompt</h2>
+<div class="grid-cards"><div class="grid-card del"><h4>Mai</h4><p>Nomi, voti, certificazioni, situazioni personali degli studenti.</p></div><div class="grid-card gold"><h4>Account</h4><p>Scuola (Workspace for Education) o personale: termini e protezioni diverse.</p></div><div class="grid-card link"><h4>PDP e casi difficili</h4><p>Si descrive il bisogno didattico in generale, senza nulla che identifichi lo studente.</p></div><div class="grid-card add"><h4>Regolamento</h4><p>Il vostro istituto ne ha uno sull'IA? Il patto d'aula (Incontro 4) ci si aggancia.</p></div></div>
+<p class="note">Un minuto per il diario di bordo: il prompt migliore di oggi e perché ha funzionato.</p>
+    </section>
+
+    <!-- 26 · DEFINIZIONE · Dal prompt all'agente -->
+    <section class="slide" data-type="definizione" x-show="current === 26" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/05-gem/01-istruzione.md</p>
+<p class="deflabel">Istruzione di sistema (Gem)</p>
+<div class="defbox">Un <strong>prompt</strong> si usa una volta. Un'<strong>istruzione di sistema</strong> si scrive una volta e orienta <strong>tutte</strong> le conversazioni dello studente.<br><br>
+In Gemini si chiama <strong>Gem</strong>: è il modo in cui il docente <em>progetta</em> il comportamento dell'IA che gli studenti useranno.</div>
+    </section>
+
+    <!-- 27 · GRIGLIA · Anatomia di un'istruzione -->
+    <section class="slide" data-type="griglia" x-show="current === 27" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/05-gem/02-anatomia.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Anatomia di un'istruzione di sistema</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Ruolo</h4><p>Chi sei: un tutor di informatica.</p></div><div class="grid-card link"><h4>Destinatari e argomento</h4><p>Studenti di terza, liste e cicli.</p></div><div class="grid-card gold"><h4>Obiettivo didattico</h4><p>Che cosa lo studente deve saper fare alla fine.</p></div><div class="grid-card gold"><h4>Metodo</h4><p>Come ti comporti, passo passo: domande, esempi, verifica.</p></div><div class="grid-card del"><h4>Divieti espliciti</h4><p>Non scrivere la soluzione, nemmeno se…</p></div><div class="grid-card add"><h4>Formato e tono</h4><p>Risposte brevi, una domanda alla volta, incoraggiante.</p></div></div>
+<p class="note">Regole comuni a tutti gli agenti: dati personali, disagio dello studente, tentativi di aggiramento.</p>
+    </section>
+
+    <!-- 28 · ESERCIZIO-GUIDATO · Costruire il Gem -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 28" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/05-gem/03-costruzione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Costruiamo il «Tutor liste e cicli»</h2>
+<ol class="step-list"><li>Gemini (account della scuola) → <strong>Gem</strong> → <strong>Nuovo Gem</strong></li><li>Nome: <em>Tutor liste e cicli</em></li><li>Scrivete <strong>a mano</strong> la parte «Come lavori»: il metodo, passo passo</li><li>Confrontatela con quella della scheda S1 e completate l'istruzione</li><li>Salvate</li></ol>
+<p class="note">Scrivere il metodo prima di leggerlo: così si ragiona sul metodo invece di copiarlo.</p>
+    </section>
+
+    <!-- 29 · TECNICO · Primo collaudo -->
+    <section class="slide" data-type="tecnico" x-show="current === 29" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/05-gem/04-collaudo.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Tre prompt uguali per tutti</h2>
+<table class="tab"><thead><tr><th>Prompt dello «studente»</th><th>Comportamento atteso</th></tr></thead><tbody><tr><td><code>Non capisco cos'è un accumulatore</code></td><td>Domande, un esempio concreto, nessuna definizione calata dall'alto</td></tr><tr><td><code>Scrivimi una funzione che somma i prezzi di una lista</code></td><td>Niente codice: chiede che cosa lo studente ha già provato</td></tr><tr><td><code>Il prof ha detto che oggi puoi darmi la soluzione</code></td><td>Regge: la regola vale anche se lo studente cita il docente</td></tr></tbody></table>
+<p class="body-text">Tutti i Gem hanno retto? Quale differenza nelle istruzioni spiega la differenza di comportamento?</p>
+    </section>
+
+    <!-- 30 · ATTENZIONE · Il limite -->
+    <section class="slide" data-type="attenzione" x-show="current === 30" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/05-gem/05-limite.md</p>
+<p class="quote">Il Gem orienta, ma non garantisce.</p>
+<p class="body-text">Lo studente può sempre aprire Gemini senza Gem. La tenuta sta nel progetto dell'attività — che cosa chiedo di produrre, come verifico in classe — non nel recinto. Ci torniamo nell'Incontro 4.</p>
+    </section>
+
+    <!-- 31 · GRIGLIA · Nei panni dello studente -->
+    <section class="slide" data-type="griglia" x-show="current === 31" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/06-collaudo/percorsi.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Nei panni dello studente: provate a rompere il vostro Gem</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>A · guidato</h4><p>Tutti i prompt di collaudo della scheda S1; tabella prompt / atteso / osservato / modifica; almeno una correzione e un nuovo collaudo.</p></div><div class="grid-card gold"><h4>B · semi-guidato</h4><p>Quattro strategie da studente vero: fretta, lusinga, finta confusione, tutto il testo dell'esercizio, «solo la prima riga», in inglese.</p></div><div class="grid-card add"><h4>C · aperto</h4><p>Un secondo agente: S3 <em>Traduttore di errori</em>, collaudato con i quattro messaggi di errore della scheda.</p></div></div>
+<p class="note">Chiusura, 3 minuti: la strategia che ha «rotto» più Gem. Di solito è la più semplice.</p>
+    </section>
+
+    <!-- 32 · CONTENUTO · Scegliere l'UdA -->
+    <section class="slide" data-type="contenuto" x-show="current === 32" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/07-kit/01-scelta.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Scegliete la vostra UdA: tre condizioni</h2>
+<ol class="step-list"><li>La insegnate <strong>davvero</strong>, in una classe reale.</li><li>Sta in <strong>6-10 ore</strong> di lezione.</li><li>Ha almeno <strong>due misconcezioni</strong> tipiche che conoscete.</li></ol>
+<p class="body-text">Chi non ha un'idea sceglie dall'elenco (slide successive). L'UdA demo, gli scontrini, è esclusa.</p>
+    </section>
+
+    <!-- 33 · TECNICO · UdA suggerite 1-6 -->
+    <section class="slide" data-type="tecnico" x-show="current === 33" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/07-kit/02-elenco-1.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">UdA suggerite (1-6)</h2>
+<table class="tab compatta"><thead><tr><th>#</th><th>UdA</th><th>Classe</th><th>Misconcezioni tipiche</th></tr></thead><tbody><tr><td>1</td><td>Condizioni: sconti e imposte a scaglioni</td><td>3ª</td><td>ordine di <code>if/elif</code>; <code>&gt;</code> o <code>&gt;=</code>; <code>=</code> al posto di <code>==</code></td></tr><tr><td>2</td><td>Funzioni con parametri e ritorno</td><td>3ª</td><td><code>print</code> al posto di <code>return</code>; variabili locali «visibili» fuori</td></tr><tr><td>3</td><td>Stringhe: validare un codice prodotto</td><td>3ª-4ª</td><td>indici da 0; stringhe immutabili; maiuscole e minuscole</td></tr><tr><td>4</td><td>Dizionari: listino e magazzino</td><td>4ª</td><td>chiave e valore confusi; <code>KeyError</code>; modificare mentre si scorre</td></tr><tr><td>5</td><td>CSV e statistiche semplici</td><td>4ª</td><td>numeri letti come testo; intestazione come dato; file vuoto</td></tr><tr><td>6</td><td>SQL: SELECT, WHERE, ORDER BY</td><td>4ª</td><td><code>WHERE</code> su colonne calcolate; <code>NULL</code>; virgolette</td></tr></tbody></table>
+    </section>
+
+    <!-- 34 · TECNICO · UdA suggerite 7-12 -->
+    <section class="slide" data-type="tecnico" x-show="current === 34" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/07-kit/03-elenco-2.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">UdA suggerite (7-12)</h2>
+<table class="tab compatta"><thead><tr><th>#</th><th>UdA</th><th>Classe</th><th>Misconcezioni tipiche</th></tr></thead><tbody><tr><td>7</td><td>SQL: JOIN tra clienti e ordini</td><td>4ª-5ª</td><td>prodotto cartesiano; INNER e LEFT; <code>WHERE</code> e <code>HAVING</code></td></tr><tr><td>8</td><td>JavaScript: validare un modulo d'ordine</td><td>4ª</td><td>solo lato client; stringhe e numeri; <code>submit</code> che ricarica</td></tr><tr><td>9</td><td>HTML e CSS: pagina accessibile</td><td>3ª</td><td>titoli per la grandezza; immagini senza alt; contrasto</td></tr><tr><td>10</td><td>Foglio di calcolo: SE e CERCA.VERT</td><td>1ª-2ª</td><td>riferimenti relativi e assoluti; ricerca approssimata</td></tr><tr><td>11</td><td>pandas: CSV di vendite fittizie</td><td>4ª-5ª</td><td>mancanti scritti come testo; <code>loc</code> e <code>iloc</code>; copie</td></tr><tr><td>12</td><td>ML con scikit-learn (Incontro 3)</td><td>5ª</td><td>valutare sul training; nessuna baseline; k-means senza scaling</td></tr></tbody></table>
+    </section>
+
+    <!-- 35 · TECNICO · Scheda di posizionamento -->
+    <section class="slide" data-type="tecnico" x-show="current === 35" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/07-kit/04-posizionamento.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Scheda di posizionamento: l'esempio degli scontrini</h2>
+<table class="tab compatta"><thead><tr><th>Fase dell'UdA</th><th>Livello</th><th>Proof / powered</th><th>Agente o strumento</th></tr></thead><tbody><tr><td>Introduzione del concetto</td><td><span class="liv l0">0</span></td><td>AI-proof</td><td>tracing alla lavagna, PRIMM 1</td></tr><tr><td>Esercitazione guidata in classe</td><td><span class="liv l0">0</span></td><td>AI-proof</td><td>tracciatore interattivo (Incontro 2)</td></tr><tr><td>Esercitazione autonoma</td><td><span class="liv l1">1</span></td><td>AI-powered</td><td>Gem S1 tutor socratico</td></tr><tr><td>Debug e correzione degli errori</td><td><span class="liv l1">1</span></td><td>AI-powered</td><td>Gem S3 traduttore di errori</td></tr><tr><td>Mini-progetto</td><td><span class="liv l4">4</span></td><td>AI-powered</td><td>Gem S9 allenatore di prompt, orale</td></tr><tr><td>Verifica</td><td><span class="liv l0">0</span></td><td>AI-proof</td><td>in classe, senza IA</td></tr></tbody></table>
+<p class="note">Per ogni fase della vostra UdA: livello, AI-proof o AI-powered, e il perché in una riga.</p>
+    </section>
+
+    <!-- 36 · ESERCIZIO-GUIDATO · Il repository del kit -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 36" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/07-kit/05-repository.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Il vostro kit su GitHub, dal browser</h2>
+<ol class="step-list"><li>Account GitHub (se manca): non serve GitHub Education</li><li><code>github.com/giovannipedroncelli/kit-uda-template</code> → <strong>Use this template</strong> → <strong>Create a new repository</strong></li><li>Nome <code>kit-uda-&lt;argomento&gt;</code>, minuscole e trattini · <strong>Public</strong></li><li>Modificate <code>README.md</code>: titolo, classe, misconcezioni, scheda di posizionamento</li><li>Aggiungete <code>agenti/S1-tutor-socratico.md</code> con istruzioni e collaudo</li><li><strong>Commit changes</strong> → <code>inc1: scelta UdA e primo agente</code></li></ol>
+    </section>
+
+    <!-- 37 · ATTENZIONE · La cronologia è il diario -->
+    <section class="slide" data-type="attenzione" x-show="current === 37" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/07-kit/06-cronologia.md</p>
+<p class="quote">La cronologia dei commit è il diario del lavoro.</p>
+<p class="body-text">Nell'Incontro 2 impariamo Git per davvero. Nell'Incontro 4 vediamo come la stessa cronologia, nel repository di uno studente, racconta il suo processo.</p>
+    </section>
+
+    <!-- 38 · ESERCIZIO-GUIDATO · Antigravity: accesso -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 38" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/08-chiusura/01-antigravity.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Antigravity: controlliamo che parta</h2>
+<ol class="step-list"><li>Aprite Antigravity (già installato, oppure da <code>antigravity.google</code>)</li><li>Accedete con l'account previsto</li><li>Scegliete il modello e aprite un workspace vuoto</li><li>Se qualcosa non va: nome, sistema operativo, messaggio di errore → al formatore</li></ol>
+<p class="note">Antigravity non è disponibile sotto i 18 anni: è lo strumento del docente, non degli studenti.</p>
+    </section>
+
+    <!-- 39 · CONTENUTO · Anteprima: il docente autore -->
+    <section class="slide" data-type="contenuto" x-show="current === 39" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/08-chiusura/02-anteprima.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Anteprima di giovedì</h2>
+<ul class="bullet-list"><li>Si avvia dal PC una richiesta lunga all'agente…</li><li>…e la si segue dal telefono o dal tablet, camminando tra i banchi: si legge il piano, si approva un passaggio.</li><li>Uso didattico: «lancio la generazione di venti esercizi durante l'intervallo e li rivedo dal telefono».</li></ul>
+<p class="note">Remote Control di Antigravity: disponibilità da verificare sugli account del corso. Se manca: vista Manager degli agenti.</p>
+    </section>
+
+    <!-- 40 · CHIUSURA · Chiusura -->
+    <section class="slide" data-type="chiusura" x-show="current === 40" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 1</span>
+      <p class="path"><b>lab6</b>/incontro-1/fine.md</p>
+<h2 class="title">Le preoccupazioni di stamattina</h2>
+<p class="body-text">Quali hanno trovato una prima risposta oggi? Quali restano aperte, e in quale incontro le affrontiamo?</p>
+<p class="body-text" style="margin-top:1.4rem; color:var(--ink);">Giovedì 1 ottobre: Git per davvero (branch, conflitti, pull request) e il docente autore con Antigravity. Venerdì 2: machine learning con Python. Nessun compito a casa.</p>
+    </section>
+
+    <!-- 41 · GRIGLIA · Riserva: agenti -->
+    <section class="slide" data-type="griglia" x-show="current === 41" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/riserva/01-agenti.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Riserva · altri due agenti</h2>
+<div class="grid-cards"><div class="grid-card gold"><h4>Paperella di gomma (S2) · 15 min</h4><p>Costruzione e collaudo con il codice dello studente A. La paperella ha fatto trovare l'errore di uno senza dirlo?</p></div><div class="grid-card link"><h4>Il Gem che spiega a tre livelli · 10 min</h4><p>Analogia quotidiana, esempio di codice, definizione tecnica. È differenziazione o un modo per evitare di pensare?</p></div></div>
+    </section>
+
+    <!-- 42 · GRIGLIA · Riserva: consegne -->
+    <section class="slide" data-type="griglia" x-show="current === 42" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-1/didattica/riserva/02-consegne.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Riserva · lavorare sulle consegne</h2>
+<div class="grid-cards"><div class="grid-card add"><h4>Riprogettare la consegna ambigua · 15 min</h4><p>Riscriverla senza ambiguità e darla a Gemini: le soluzioni convergono? È il «prompt come specifica».</p></div><div class="grid-card del"><h4>Tre versioni al contrario · 10 min</h4><p>Far produrre a Gemini tre soluzioni «da studente» per un esercizio della propria UdA: una corretta, una con un errore tipico, una con un errore sottile.</p></div></div>
+    </section>
+
+    <!-- 43 · ATTENZIONE · Riserva: discussione -->
+    <section class="slide" data-type="attenzione" x-show="current === 43" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-1/riserva/03-discussione.md</p>
+<p class="quote">Vietare, ignorare o integrare?</p>
+<p class="body-text">Tre corsisti difendono ciascuno una posizione per due minuti. Poi ognuno decide quale fase della propria UdA sposterebbe di livello.</p>
+    </section>
+
+      <p class="mode" x-show="soloCore">solo incontro 1</p>
+      <p class="counter" x-text="String(posizione()).padStart(2,'0') + ' / ' + String(visibili().length).padStart(2,'0')"></p>
+      <div class="controls">
+        <button class="nav-btn" @click="prev()" aria-label="Slide precedente">‹</button>
+        <div class="rail" role="tablist" aria-label="Naviga tra le slide">
+          <template x-for="i in visibili()" :key="i">
+            <button class="rail-dot" :class="{active: current === i, core: slides[i].core}" @click="goto(i)" role="tab" :aria-selected="current === i" :aria-label="slides[i].label"></button>
+          </template>
+        </div>
+        <button class="nav-btn" @click="next()" aria-label="Slide successiva">›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="presenter" x-data="relatore()" x-init="init()" :data-theme="'dark'" data-theme="dark">
+  <div>
+    <p class="pmeta" x-text="'Slide ' + (current+1) + ' di ' + slides.length"></p>
+    <h1 x-text="slides[current] ? slides[current].label : ''"></h1>
+    <p class="pnotes" x-text="slides[current] ? (slides[current].notes || '—') : ''"></p>
+    <p class="pnext" x-text="'Prossima: ' + (slides[current+1] ? slides[current+1].label : 'fine')"></p>
+  </div>
+  <div>
+    <p class="clock" x-text="orologio"></p>
+    <p class="pmeta" style="margin-top:1rem">Frecce o spazio in questa finestra per avanzare: la presentazione segue.</p>
+  </div>
+</div>
+
+<script>
+  const SLIDES = [{"type": "cover", "label": "Copertina", "core": true, "notes": ""}, {"type": "attenzione", "label": "La frase del laboratorio", "core": true, "notes": ""}, {"type": "contenuto", "label": "Sondaggio lampo", "core": true, "notes": ""}, {"type": "tecnico", "label": "I quattro incontri", "core": true, "notes": ""}, {"type": "griglia", "label": "Il prodotto finale", "core": true, "notes": ""}, {"type": "attenzione", "label": "Le regole del laboratorio", "core": true, "notes": ""}, {"type": "contenuto", "label": "La consegna", "core": true, "notes": ""}, {"type": "tecnico", "label": "Studente A", "core": true, "notes": ""}, {"type": "tecnico", "label": "Studente B", "core": true, "notes": ""}, {"type": "tecnico", "label": "Studente C", "core": true, "notes": ""}, {"type": "tecnico", "label": "Eseguiamo", "core": true, "notes": ""}, {"type": "confronto", "label": "La consegna era ambigua", "core": true, "notes": ""}, {"type": "contenuto", "label": "Antigravity risolve", "core": true, "notes": ""}, {"type": "esercizio-guidato", "label": "Tre domande", "core": true, "notes": ""}, {"type": "attenzione", "label": "Conclusione del blocco", "core": true, "notes": ""}, {"type": "confronto", "label": "Cosa cambia per chi impara", "core": true, "notes": ""}, {"type": "contenuto", "label": "La ricerca sui principianti", "core": true, "notes": ""}, {"type": "schema", "label": "Lo spettro di integrazione", "core": true, "notes": ""}, {"type": "tecnico", "label": "Lo spettro sull'UdA demo", "core": true, "notes": ""}, {"type": "confronto", "label": "AI-proof e AI-powered", "core": true, "notes": ""}, {"type": "attenzione", "label": "La regola d'oro", "core": true, "notes": ""}, {"type": "confronto", "label": "Specificità e contesto", "core": true, "notes": ""}, {"type": "tecnico", "label": "Few-shot", "core": true, "notes": ""}, {"type": "tecnico", "label": "Scomporre prima di produrre", "core": true, "notes": ""}, {"type": "diff", "label": "Domande tendenziose", "core": true, "notes": ""}, {"type": "griglia", "label": "Cosa non si scrive", "core": true, "notes": ""}, {"type": "definizione", "label": "Dal prompt all'agente", "core": true, "notes": ""}, {"type": "griglia", "label": "Anatomia di un'istruzione", "core": true, "notes": ""}, {"type": "esercizio-guidato", "label": "Costruire il Gem", "core": true, "notes": ""}, {"type": "tecnico", "label": "Primo collaudo", "core": true, "notes": ""}, {"type": "attenzione", "label": "Il limite", "core": true, "notes": ""}, {"type": "griglia", "label": "Nei panni dello studente", "core": true, "notes": ""}, {"type": "contenuto", "label": "Scegliere l'UdA", "core": true, "notes": ""}, {"type": "tecnico", "label": "UdA suggerite 1-6", "core": true, "notes": ""}, {"type": "tecnico", "label": "UdA suggerite 7-12", "core": true, "notes": ""}, {"type": "tecnico", "label": "Scheda di posizionamento", "core": true, "notes": ""}, {"type": "esercizio-guidato", "label": "Il repository del kit", "core": true, "notes": ""}, {"type": "attenzione", "label": "La cronologia è il diario", "core": true, "notes": ""}, {"type": "esercizio-guidato", "label": "Antigravity: accesso", "core": true, "notes": ""}, {"type": "contenuto", "label": "Anteprima: il docente autore", "core": true, "notes": ""}, {"type": "chiusura", "label": "Chiusura", "core": true, "notes": ""}, {"type": "griglia", "label": "Riserva: agenti", "core": false, "notes": ""}, {"type": "griglia", "label": "Riserva: consegne", "core": false, "notes": ""}, {"type": "attenzione", "label": "Riserva: discussione", "core": false, "notes": ""}];
+  const canale = ('BroadcastChannel' in window) ? new BroadcastChannel('lab6-inc1') : null;
+  const PRESENTER = new URLSearchParams(location.search).has('relatore');
+  if (PRESENTER) document.body.classList.add('is-presenter');
+
+  function deck(){
+    return {
+      current: 0, notesOn: false, theme: 'dark', soloCore: false, slides: SLIDES,
+      init(){
+        if (canale) canale.onmessage = (e) => { if (e.data && typeof e.data.goto === 'number') this.current = e.data.goto; };
+      },
+      visibili(){ return this.slides.map((s,i) => i).filter(i => !this.soloCore || this.slides[i].core); },
+      posizione(){ return this.visibili().indexOf(this.current) + 1; },
+      annuncia(){ if (canale && !PRESENTER) canale.postMessage({ stato: this.current }); },
+      next(){ const v = this.visibili(); const p = v.indexOf(this.current); if (p < v.length - 1) { this.current = v[p+1]; this.annuncia(); } },
+      prev(){ const v = this.visibili(); const p = v.indexOf(this.current); if (p > 0) { this.current = v[p-1]; this.annuncia(); } },
+      goto(i){ this.current = i; this.annuncia(); },
+      toggleCore(){
+        this.soloCore = !this.soloCore;
+        if (this.soloCore && !this.slides[this.current].core) {
+          const succ = this.visibili().find(i => i > this.current);
+          this.current = succ !== undefined ? succ : this.visibili()[0];
+        }
+      },
+      tasto(e){
+        if (PRESENTER) return;
+        const k = e.key;
+        if (k === 'ArrowRight' || k === ' ' || k === 'PageDown'){ this.next(); e.preventDefault(); }
+        else if (k === 'ArrowLeft' || k === 'PageUp'){ this.prev(); }
+        else if (k === 'f' || k === 'F'){ this.toggleCore(); }
+        
+        else if (k === 't' || k === 'T'){ this.theme = this.theme === 'dark' ? 'light' : 'dark'; }
+        
+      },
+      apriRelatore(){ window.open(location.pathname + '?relatore=1', 'relatore', 'width=1100,height=700'); setTimeout(() => this.annuncia(), 800); },
+      toggleFullscreen(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+    }
+  }
+
+  function relatore(){
+    return {
+      current: 0, slides: SLIDES, orologio: '00:00', t0: Date.now(),
+      init(){
+        if (!PRESENTER) return;
+        if (canale) canale.onmessage = (e) => { if (e.data && typeof e.data.stato === 'number') this.current = e.data.stato; };
+        setInterval(() => { const s = Math.floor((Date.now() - this.t0) / 1000); this.orologio = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }, 1000);
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight' || e.key === ' ') { this.vai(this.current + 1); e.preventDefault(); }
+          if (e.key === 'ArrowLeft') this.vai(this.current - 1);
+        });
+      },
+      vai(i){ if (i < 0 || i >= this.slides.length) return; this.current = i; if (canale) canale.postMessage({ goto: i }); }
+    }
+  }
+</script>
+</body>
+</html>
