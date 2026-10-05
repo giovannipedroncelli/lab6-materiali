@@ -20,6 +20,7 @@
   table{ width:100%; border-collapse:collapse; font-size:.95rem; }
   th{ text-align:left; font-family:'IBM Plex Mono',monospace; font-size:.72rem; text-transform:uppercase; color:var(--soft); border-bottom:2px solid var(--gold); padding:.4rem; }
   td{ border-bottom:1px solid var(--rule); padding:.5rem .4rem; vertical-align:top; }
+  pre{ background:var(--surface); padding:.7rem .9rem; overflow-x:auto; font-size:.85rem; } pre code{ padding:0; }
   li{ margin:.3rem 0; } code{ font-family:'IBM Plex Mono',monospace; background:var(--surface); padding:0 .3em; }
   .nota{ color:var(--soft); font-size:.9rem; }
   @media (max-width:560px){ td:nth-child(2){ display:none; } th:nth-child(2){ display:none; } }
@@ -33,7 +34,7 @@
 
 <h2>Gli incontri</h2>
 <table><thead><tr><th>#</th><th>Data</th><th>Tema</th><th></th></tr></thead><tbody>
-<tr><td>1</td><td>martedì 29 settembre</td><td>Insegnare a programmare quando la macchina programma</td><td><a href="slide/Incontro1.html">Slide</a></td></tr><tr><td>2</td><td>giovedì 1 ottobre</td><td>Git, Antigravity e il docente autore</td><td><a href="slide/Incontro2.html">Slide</a></td></tr><tr><td>3</td><td>venerdì 2 ottobre</td><td>Machine learning con Python in classe</td><td><a href="slide/Incontro3.html">Slide</a></td></tr><tr><td>4</td><td>lunedì 5 ottobre</td><td>Valutare, regolare, consegnare</td><td><span class="dopo">Slide dopo l'incontro</span></td></tr>
+<tr><td>1</td><td>martedì 29 settembre</td><td>Insegnare a programmare quando la macchina programma</td><td><a href="slide/Incontro1.html">Slide</a></td></tr><tr><td>2</td><td>giovedì 1 ottobre</td><td>Git, Antigravity e il docente autore</td><td><a href="slide/Incontro2.html">Slide</a></td></tr><tr><td>3</td><td>venerdì 2 ottobre</td><td>Machine learning con Python in classe</td><td><a href="slide/Incontro3.html">Slide</a></td></tr><tr><td>4</td><td>lunedì 5 ottobre</td><td>Valutare, regolare, consegnare</td><td><a href="slide/Incontro4.html">Slide</a></td></tr>
 </tbody></table>
 <p class="nota">Nelle slide: frecce per navigare, T per il tema chiaro o scuro, F per nascondere le slide di riserva.</p>
 
@@ -45,6 +46,28 @@
 <li><a href="https://learngitbranching.js.org/?locale=it_IT">Learn Git Branching</a>, per il modello mentale di Git</li>
 </ul>
 <h2>Notebook dell'Incontro 3</h2><p>Si aprono in Colab direttamente dal repository dimostrativo.</p><ul><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/01_pandas_funghi.ipynb">01_pandas_funghi</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/02_sei_modelli.ipynb">02_sei_modelli</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/02b_baseline_credito.ipynb">02b_baseline_credito</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/03_errori_ml.ipynb">03_errori_ml</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/04_riserva_knn_da_zero.ipynb">04_riserva_knn_da_zero</a></li><li><a href="https://colab.research.google.com/github/giovannipedroncelli/repo-demo-formatore/blob/main/ml/05_riserva_svm.ipynb">05_riserva_svm</a></li></ul>
+<h2>Materiali dell'Incontro 4</h2>
+<ul>
+<li><a href="incontro4/Lab6_Incontro4_Materiali_Corsisti.pdf">Materiali per i corsisti</a>: sei consegne in breve, l'orale in 5 minuti, dieci dilemmi, scheda per la lezione</li>
+<li><a href="incontro4/sei-consegne/Lab6_Incontro4_Sei_Consegne.pdf">Le sei consegne complete</a> e i loro <a href="https://github.com/giovannipedroncelli/lab6-materiali/tree/main/incontro4/sei-consegne/allegati">allegati</a> (codice, database, pagina web, fogli di calcolo, CSV)</li>
+<li><a href="incontro4/caso-due-studenti/fascicolo.pdf">Il caso di due studenti: fascicolo</a></li>
+</ul>
+<h2>Il caso di due studenti sul vostro computer</h2>
+<p>Marco e Giulia sono due repository Git veri, ciascuno chiuso in un file: <a href="incontro4/caso-due-studenti/marco.bundle">marco.bundle</a> e <a href="incontro4/caso-due-studenti/giulia.bundle">giulia.bundle</a>.</p>
+<p><b>Senza installare niente:</b> <a href="https://colab.research.google.com/github/giovannipedroncelli/lab6-materiali/blob/main/incontro4/caso-due-studenti/caso_due_studenti.ipynb">apri il notebook in Colab</a> ed esegui le celle in ordine. Scarica i due studenti, mostra la storia dei commit, esegue i test e la prova del docente.</p>
+<p><b>Sul proprio PC</b> (servono Git e Python con pytest): scaricate i due file in una cartella, poi dal terminale (su Windows: Git Bash; <code>python</code> invece di <code>python3</code>):</p>
+<pre><code>git clone marco.bundle marco
+git clone giulia.bundle giulia
+cd marco
+git log --oneline
+python3 -m pytest -q
+python3 -c "from report import report; print(report([]))"
+cd ../giulia
+git log --oneline
+python3 -m pytest -q
+python3 -c "from report import report_giornata; print(report_giornata([]))"</code></pre>
+<p class="nota">Risultati attesi: Marco 1 commit, <code>5 passed</code>, poi <code>ValueError</code> con la lista vuota. Giulia 9 commit, <code>1 failed, 7 passed</code>, poi <code>(0, 0, None, 0)</code>. Per la prima versione dell'IA di Giulia: <code>git switch --detach HEAD~5</code>, <code>python3 -m pytest -q</code> (3 test falliti), poi <code>git switch main</code>.</p>
+
 <h2>Licenza</h2>
 <p class="nota">Materiali didattici: CC BY 4.0 · Codice: MIT. Nessun dato personale di studenti in questi materiali.</p>
 </main>

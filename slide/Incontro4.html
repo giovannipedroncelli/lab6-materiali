@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab6 · Incontro 4 — Valutare, regolare, consegnare</title>
+
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js"></script>
+
+<style>
+  :root{ --font-display:'Fraunces', serif; --font-body:'Inter', sans-serif; --font-mono:'IBM Plex Mono', monospace; }
+  [data-theme="dark"]{
+    --bg:#14161A; --surface:#1D2025; --surface-2:#24272D; --ink:#ECE9E1; --ink-soft:#9CA3A8; --rule:#2C3036;
+    --gold:#E8C177; --gold-soft:#4A4331; --add:#7FBE8F; --add-soft:rgba(127,190,143,.16);
+    --del:#DE8B85; --del-soft:rgba(194,85,74,.22); --link:#6FB8B2; --link-soft:#263936; --canvas:#0F1013;
+  }
+  [data-theme="light"]{
+    --bg:#F1F0EA; --surface:#E7E3D6; --surface-2:#DEDACC; --ink:#1B1D1F; --ink-soft:#5B5F5A; --rule:#D3CFBF;
+    --gold:#8C5F19; --gold-soft:#EEDFB9; --add:#3F7A4E; --add-soft:#DCEBDD;
+    --del:#A23F3A; --del-soft:#F0DAD8; --link:#1F6F6B; --link-soft:#D9E6E4; --canvas:#08090A;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  [x-cloak]{ display:none !important; }
+  html,body{ height:100%; background:var(--canvas); font-family:var(--font-body); color:var(--ink); }
+  code{ font-family:var(--font-mono); font-size:.92em; background:var(--surface); padding:.05em .3em; border-radius:2px; }
+
+  .stage{ position:relative; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--canvas); }
+  .deck{ position:relative; background:var(--bg); width:min(100vw, calc(100vh * 16 / 9)); height:min(100vh, calc(100vw * 9 / 16));
+         box-shadow:0 40px 100px rgba(0,0,0,.5); overflow:hidden; display:flex; transition:background .25s ease; }
+
+  .gutter{ flex:0 0 3.4rem; height:100%; border-right:1px solid var(--rule); display:flex; flex-direction:column; align-items:center; padding-top:clamp(1.6rem,3.5vw,2.6rem); position:relative; }
+  .gutter .idx{ font-family:var(--font-mono); font-size:.74rem; color:var(--ink-soft); }
+  .gutter .idx b{ color:var(--gold); font-weight:500; }
+  .gutter .rail-line{ position:absolute; top:4.4rem; bottom:2rem; left:50%; width:1px; background:var(--rule); }
+
+  .frame{ position:relative; flex:1; height:100%; }
+  .slide{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:clamp(1.8rem,4.2vw,3.6rem); padding-bottom:3.6rem; overflow:hidden; }
+
+  .badge{ position:absolute; top:1.15rem; left:clamp(1.8rem,4.2vw,3.6rem); font-family:var(--font-mono); font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; }
+  .badge.core{ color:var(--add); } .badge.extra{ color:var(--ink-soft); }
+
+  .path{ font-family:var(--font-mono); font-size:clamp(.62rem,.95vw,.74rem); letter-spacing:.02em; color:var(--ink-soft); margin-bottom:1rem; }
+  .path b{ color:var(--gold); font-weight:500; }
+  .title{ font-family:var(--font-display); font-weight:600; font-optical-sizing:auto; line-height:1.05; color:var(--ink); font-size:clamp(1.5rem,3.3vw,2.7rem); max-width:26ch; }
+  .subtitle{ color:var(--ink-soft); font-size:clamp(.92rem,1.4vw,1.15rem); max-width:52ch; margin-top:1rem; line-height:1.55; }
+  .body-text{ font-size:clamp(.9rem,1.3vw,1.1rem); color:var(--ink-soft); line-height:1.6; max-width:72ch; margin-top:1.1rem; }
+  .body-text strong{ color:var(--ink); }
+  .meta-row{ font-family:var(--font-mono); font-size:clamp(.6rem,.9vw,.74rem); color:var(--ink-soft); margin-top:1.8rem; display:flex; gap:1.3rem; flex-wrap:wrap; }
+  .meta-row span{ padding-left:1.3rem; position:relative; } .meta-row span:first-child{ padding-left:0; }
+  .meta-row span:not(:first-child)::before{ content:"·"; position:absolute; left:.4rem; color:var(--rule); }
+
+  .slide[data-type="cover"] .title{ max-width:16ch; font-size:clamp(1.9rem,4.2vw,3.4rem); }
+  .slide[data-type="cover"] .path{ color:var(--gold); }
+
+  .agenda-list{ list-style:none; margin-top:1.5rem; max-width:60ch; }
+  .agenda-list li{ position:relative; padding:.45rem 0 .45rem 2.1rem; font-size:clamp(.86rem,1.25vw,1.02rem); color:var(--ink); }
+  .agenda-list li::before{ content:attr(data-n); position:absolute; left:0; top:.45rem; font-family:var(--font-mono); font-size:.68rem; color:var(--bg); background:var(--link);
+    width:1.4rem; height:1.4rem; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .agenda-list li:not(:last-child)::after{ content:""; position:absolute; left:.69rem; top:1.95rem; height:calc(100% - 1.1rem); width:1px; background:var(--rule); }
+
+  .bullet-list{ list-style:none; margin-top:1.4rem; max-width:70ch; }
+  .bullet-list li{ position:relative; padding:.42rem 0 .42rem 1.5rem; font-size:clamp(.92rem,1.4vw,1.14rem); color:var(--ink); line-height:1.5; }
+  .bullet-list li::before{ content:"›"; position:absolute; left:0; top:.38rem; font-family:var(--font-mono); color:var(--gold); font-size:1rem; }
+
+  .slide[data-type="definizione"] .deflabel{ font-family:var(--font-display); font-weight:600; font-size:clamp(1.4rem,2.8vw,2.2rem); color:var(--gold); }
+  .defbox{ margin-top:1.4rem; border-left:2px solid var(--gold); background:var(--gold-soft); padding:1.1rem 1.4rem; max-width:74ch;
+           font-size:clamp(.9rem,1.3vw,1.08rem); color:var(--ink); line-height:1.65; }
+  .defbox code{ background:transparent; }
+
+  .compare{ margin-top:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; max-width:100%; }
+  .compare-col{ border-top:2px solid var(--rule); padding-top:.8rem; }
+  .compare-col.del{ border-top-color:var(--del); } .compare-col.add{ border-top-color:var(--add); } .compare-col.link{ border-top-color:var(--link); }
+  .compare-col h3{ font-family:var(--font-mono); font-size:.8rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:.6rem; }
+  .compare-col.del h3{ color:var(--del); } .compare-col.add h3{ color:var(--add); } .compare-col.link h3{ color:var(--link); }
+  .compare-col ul{ padding-left:1.1rem; color:var(--ink); font-size:clamp(.9rem,1.3vw,1.08rem); line-height:1.6; }
+
+  .step-list{ list-style:none; margin-top:1.4rem; max-width:64ch; counter-reset:step; }
+  .step-list li{ counter-increment:step; position:relative; padding:.45rem 0 .45rem 2.5rem; font-size:clamp(.92rem,1.35vw,1.12rem); color:var(--ink); line-height:1.5; }
+  .step-list li::before{ content:counter(step); position:absolute; left:0; top:.32rem; font-family:var(--font-mono); font-weight:500; font-size:.8rem; color:var(--link);
+    border:1px solid var(--link); width:1.6rem; height:1.6rem; border-radius:3px; display:flex; align-items:center; justify-content:center; }
+  .note{ margin-top:1.1rem; font-family:var(--font-mono); font-size:clamp(.68rem,1vw,.82rem); color:var(--ink-soft); max-width:100%; line-height:1.5; }
+
+  .code-block{ margin-top:1.2rem; background:var(--surface); border:1px solid var(--rule); color:var(--ink); font-family:var(--font-mono);
+               font-size:clamp(.72rem,1.15vw,.98rem); padding:1rem 1.4rem; max-width:100%; line-height:1.6; overflow:auto; white-space:pre; }
+  .code-block .cm{ color:var(--ink-soft); } .code-block .op{ color:var(--gold); }
+  .code-block .k-del{ color:var(--del); font-weight:600; } .code-block .k-add{ color:var(--add); font-weight:600; } .code-block .k-mid{ color:var(--gold); font-weight:600; }
+
+  .tab{ margin-top:1.2rem; border-collapse:collapse; max-width:100%; width:100%; font-size:clamp(.8rem,1.2vw,1.02rem); }
+  .tab th{ text-align:left; font-family:var(--font-mono); font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);
+           border-bottom:2px solid var(--gold); padding:.4rem .6rem; }
+  .tab td{ border-bottom:1px solid var(--rule); padding:.42rem .6rem; color:var(--ink); vertical-align:top; line-height:1.45; }
+
+  .slide[data-type="attenzione"]{ background:var(--canvas); }
+  .slide[data-type="attenzione"] .path{ color:var(--gold); }
+  .slide[data-type="attenzione"] .quote{ font-family:var(--font-display); font-weight:600; font-style:italic; color:#F4F1E9; font-size:clamp(1.4rem,3.2vw,2.5rem); max-width:22ch; line-height:1.18; }
+  .slide[data-type="attenzione"] .body-text{ color:#A9A497; }
+
+  .slide[data-type="riepilogo"] .bullet-list li::before{ color:var(--add); content:"✓"; font-size:.85rem; top:.48rem; }
+  .slide[data-type="chiusura"] .title{ color:var(--gold); }
+
+  .cycle{ position:relative; width:min(38vw,21rem); aspect-ratio:1/1; margin:1rem auto 0; }
+  .cycle svg.ring circle{ fill:none; stroke:var(--rule); stroke-width:1.5; stroke-dasharray:2 6; }
+  .cycle svg.ring{ position:absolute; inset:0; overflow:visible; }
+  .cycle-node{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:.3rem; width:7rem; text-align:center; }
+  .cycle-node .dot{ width:2.2rem; height:2.2rem; border-radius:50%; background:var(--bg); border:1.5px solid var(--link); display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:.72rem; color:var(--link); }
+  .cycle-node.current .dot{ background:var(--gold); border-color:var(--gold); color:var(--bg); }
+  .cycle-node span.label{ font-size:.74rem; color:var(--ink); line-height:1.2; background:var(--bg); }
+  .cycle-caption{ margin-top:1rem; font-family:var(--font-mono); font-size:.7rem; color:var(--ink-soft); text-align:center; }
+
+  .diff-file{ margin-top:1.4rem; display:flex; align-items:center; gap:.6rem; font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft); }
+  .diff-file .dot{ width:.5rem; height:.5rem; border-radius:50%; } .diff-file .dot.add{ background:var(--add); } .diff-file .dot.del{ background:var(--del); margin-left:.8rem; }
+  .diff-block{ margin-top:.6rem; max-width:72ch; font-family:var(--font-mono); font-size:clamp(.72rem,1.05vw,.88rem); line-height:1.7; background:var(--surface); border:1px solid var(--rule); padding:.9rem 0; overflow-x:auto; }
+  .diff-line{ padding:.08rem 1.3rem; white-space:pre; color:var(--ink-soft); }
+  .diff-line.add{ background:var(--add-soft); color:var(--ink); } .diff-line.add::before{ content:"+ "; color:var(--add); }
+  .diff-line.del{ background:var(--del-soft); color:var(--ink-soft); text-decoration:line-through; text-decoration-color:var(--del); } .diff-line.del::before{ content:"- "; color:var(--del); }
+  .diff-line.ctx::before{ content:"  "; }
+
+  .grid-cards{ margin-top:1.4rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(12rem,1fr)); gap:1.2rem 1.8rem; max-width:100%; }
+  .grid-card{ border-top:2px solid var(--rule); padding-top:.55rem; }
+  .grid-card.gold{ border-top-color:var(--gold); } .grid-card.link{ border-top-color:var(--link); } .grid-card.del{ border-top-color:var(--del); } .grid-card.add{ border-top-color:var(--add); }
+  .grid-card h4{ font-family:var(--font-mono); font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink); margin-bottom:.3rem; }
+  .grid-card p{ font-size:clamp(.82rem,1.22vw,1rem); color:var(--ink-soft); line-height:1.45; }
+  .grid-card p code{ font-size:.85em; }
+
+  /* ---- schema: SVG che eredita i colori del tema ---- */
+  svg.schema{ width:100%; max-width:100%; height:auto; margin-top:1rem; overflow:visible; }
+  svg.schema .box{ fill:var(--surface); stroke:var(--rule); stroke-width:1.5; }
+  svg.schema .box.gold{ stroke:var(--gold); } svg.schema .box.link{ stroke:var(--link); } svg.schema .box.add{ stroke:var(--add); }
+  svg.schema .t{ fill:var(--ink); font-family:var(--font-display); font-weight:600; font-size:22px; text-anchor:middle; }
+  svg.schema .s{ fill:var(--ink-soft); font-family:var(--font-body); font-size:14px; text-anchor:middle; }
+  svg.schema .c{ fill:var(--gold); font-family:var(--font-mono); font-size:14px; text-anchor:middle; }
+  svg.schema .a{ stroke:var(--gold); stroke-width:2; fill:none; } svg.schema .a.back{ stroke:var(--link); stroke-dasharray:6 5; }
+  svg.schema .m{ fill:var(--gold); }
+  svg.schema .l{ stroke-width:3; fill:none; } svg.schema .l.main{ stroke:var(--link); } svg.schema .l.br{ stroke:var(--gold); }
+  svg.schema .n{ fill:var(--bg); stroke:var(--link); stroke-width:3; } svg.schema .n.b{ stroke:var(--gold); } svg.schema .n.m{ fill:var(--add); stroke:var(--add); }
+  svg.schema .lab{ fill:var(--link); font-family:var(--font-mono); font-size:16px; } svg.schema .lab.b{ fill:var(--gold); }
+
+  .tab.compatta{ font-size:clamp(.72rem,1.05vw,.9rem); } .tab.compatta td{ padding:.3rem .5rem; }
+  .liv{ display:inline-block; font-family:var(--font-mono); font-size:.72em; padding:.05em .45em; border:1px solid var(--rule); border-radius:2px; }
+  .liv.l0{ color:var(--del); border-color:var(--del); } .liv.l1, .liv.l2{ color:var(--gold); border-color:var(--gold); }
+  .liv.l3{ color:var(--link); border-color:var(--link); } .liv.l4{ color:var(--add); border-color:var(--add); }
+  svg.schema .box.del{ stroke:var(--del); } svg.schema .fillsoft{ fill:var(--gold-soft); }
+  svg.schema .tl{ fill:var(--ink); font-family:var(--font-body); font-size:15px; text-anchor:start; }
+  .print-notes{ display:none; margin-top:1.1rem; padding-top:.8rem; border-top:1px dashed var(--rule); font-family:var(--font-mono); font-size:.7rem; color:var(--ink-soft); max-width:80ch; line-height:1.55; }
+  .notes-on .print-notes{ display:block; }
+  .print-notes .notes-label{ display:block; text-transform:uppercase; letter-spacing:.08em; color:var(--gold); margin-bottom:.3rem; font-size:.62rem; }
+
+  .toolbar{ position:absolute; top:1rem; right:1rem; display:flex; gap:.4rem; z-index:5; flex-wrap:wrap; justify-content:flex-end; }
+  .tbtn{ font-family:var(--font-mono); font-size:.62rem; letter-spacing:.05em; background:var(--surface); border:1px solid var(--rule); color:var(--ink-soft); padding:.36rem .6rem; cursor:pointer; border-radius:2px; }
+  .tbtn:hover{ color:var(--ink); border-color:var(--ink-soft); }
+  .tbtn.on{ color:var(--bg); background:var(--gold); border-color:var(--gold); }
+  .tbtn:focus-visible, .nav-btn:focus-visible, .rail-dot:focus-visible{ outline:2px solid var(--link); outline-offset:2px; }
+
+  .controls{ position:absolute; left:0; right:0; bottom:.9rem; display:flex; align-items:center; justify-content:center; gap:.8rem; pointer-events:none; }
+  .controls > *{ pointer-events:auto; }
+  .nav-btn{ width:1.9rem; height:1.9rem; border-radius:50%; border:1px solid var(--rule); background:var(--surface); color:var(--ink-soft); font-family:var(--font-mono); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .nav-btn:hover{ border-color:var(--link); color:var(--link); }
+  .rail{ display:flex; align-items:center; gap:.32rem; padding:.28rem .7rem; background:var(--surface); border:1px solid var(--rule); border-radius:999px; max-width:70%; flex-wrap:wrap; justify-content:center; }
+  .rail-dot{ width:.38rem; height:.38rem; border-radius:50%; background:transparent; border:1.2px solid var(--ink-soft); cursor:pointer; }
+  .rail-dot.core{ border-color:var(--add); }
+  .rail-dot.active{ background:var(--link); border-color:var(--link); width:.54rem; height:.54rem; }
+  .counter{ font-family:var(--font-mono); font-size:.66rem; color:var(--ink-soft); position:absolute; right:1.1rem; bottom:1.1rem; }
+  .mode{ font-family:var(--font-mono); font-size:.6rem; color:var(--add); position:absolute; left:1rem; bottom:1.1rem; text-transform:uppercase; letter-spacing:.06em; }
+
+  /* ---- vista relatore ---- */
+  .presenter{ display:none; }
+  body.is-presenter .stage{ display:none; }
+  body.is-presenter .presenter{ display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; padding:1.5rem; min-height:100vh; background:var(--bg); color:var(--ink); }
+  .presenter h1{ font-family:var(--font-display); font-size:1.6rem; }
+  .presenter .pnotes{ font-size:1.15rem; line-height:1.6; white-space:pre-wrap; }
+  .presenter .pmeta{ font-family:var(--font-mono); color:var(--ink-soft); font-size:.8rem; margin-bottom:.8rem; }
+  .presenter .pnext{ font-family:var(--font-mono); color:var(--gold); margin-top:1.2rem; }
+  .presenter .clock{ font-family:var(--font-mono); font-size:2.4rem; color:var(--gold); }
+
+  @media (max-width:720px){ .compare{ grid-template-columns:1fr; } .grid-cards{ grid-template-columns:1fr 1fr; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; animation:none !important; } }
+  @media print{
+    @page{ size:landscape; margin:0; }
+    html,body{ background:var(--bg); height:auto; }
+    .stage{ position:static; width:auto; height:auto; display:block; background:none; }
+    .toolbar,.controls,.counter,.mode{ display:none !important; }
+    .deck{ position:static; width:auto; height:auto; box-shadow:none; overflow:visible; display:block; }
+    .gutter{ display:none; }
+    .slide{ display:flex !important; position:relative; inset:auto; width:100%; height:100vh; page-break-after:always; break-after:page; }
+    .print-notes{ display:block !important; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="stage" x-data="deck()" x-init="init()" x-cloak :data-theme="theme"
+     @keydown.window="tasto($event)">
+
+  <div class="toolbar">
+    <button class="tbtn" :class="{on: soloCore}" @click="toggleCore()" x-text="soloCore ? '● SOLO INCONTRO 4 (F)' : '○ DECK COMPLETO (F)'"></button>
+    <button class="tbtn" :class="{on: theme==='light'}" @click="theme = theme==='dark' ? 'light' : 'dark'" x-text="theme==='dark' ? '◐ LIGHT (T)' : '◑ DARK (T)'"></button>
+    <button class="tbtn" @click="toggleFullscreen()">SCHERMO INTERO</button>
+  </div>
+
+  <div class="deck" :class="{'notes-on': notesOn}" role="region" aria-roledescription="presentazione" aria-label="Lab6 · Incontro 4 — Valutare, regolare, consegnare" :data-theme="theme">
+    <div class="gutter">
+      <span class="idx"><b x-text="String(posizione()).padStart(2,'0')"></b>/<span x-text="String(visibili().length).padStart(2,'0')"></span></span>
+      <div class="rail-line"></div>
+    </div>
+    <div class="frame">
+
+
+    <!-- 00 · COVER · Copertina -->
+    <section class="slide" data-type="cover" x-show="current === 0" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/00-cover.md</p>
+<h1 class="title">Valutare, regolare, consegnare</h1>
+<p class="subtitle">Come verifico che gli studenti abbiano capito, con quali regole li lascio usare l'IA, e come porto il kit in classe.</p>
+<div class="meta-row"><span>INCONTRO 4 DI 4</span><span>LUNEDÌ 5 OTTOBRE</span><span>3 ORE</span></div>
+    </section>
+
+    <!-- 01 · TECNICO · Le tre ore di oggi -->
+    <section class="slide" data-type="tecnico" x-show="current === 1" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/00/programma.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Le tre ore di oggi</h2>
+<table class="tab compatta"><thead><tr><th>Orario</th><th>Blocco</th></tr></thead><tbody><tr><td>00:05</td><td>Valutare il processo, non solo il prodotto</td></tr><tr><td>00:20</td><td>Il compito che resiste</td></tr><tr><td>00:40</td><td>Il caso di due studenti</td></tr><tr><td>01:30</td><td>Sei consegne da riprogettare</td></tr><tr><td>01:55</td><td>L'orale in 5 minuti</td></tr><tr><td>02:15</td><td>Il patto d'aula e l'allenatore di prompt</td></tr><tr><td>02:30</td><td>Dieci dilemmi</td></tr><tr><td>02:50</td><td>Una lezione per la prossima settimana · questionario</td></tr></tbody></table>
+<p class="note">Pausa 01:20–01:30 · materiali: fascicolo del caso e materiali dell'Incontro 4</p>
+    </section>
+
+    <!-- 02 · ATTENZIONE · Che cosa porterò in classe -->
+    <section class="slide" data-type="attenzione" x-show="current === 2" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/01-apertura/domanda.md</p>
+<p class="quote">Che cosa porterete in classe, la prossima settimana, da questo corso?</p>
+<p class="body-text">Una cosa sola, concreta. La scriviamo adesso e la riprendiamo alla fine.</p>
+    </section>
+
+    <!-- 03 · ATTENZIONE · Rilevatori -->
+    <section class="slide" data-type="attenzione" x-show="current === 3" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/02-teoria/01-rilevatori.md</p>
+<p class="quote">I rilevatori di codice generato non sono affidabili.</p>
+<p class="body-text">Producono falsi positivi. Non si usano per sanzionare. La prova sta altrove: nelle evidenze del processo.</p>
+    </section>
+
+    <!-- 04 · TECNICO · Le evidenze del processo -->
+    <section class="slide" data-type="tecnico" x-show="current === 4" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/02-teoria/02-evidenze.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Le evidenze del processo</h2>
+<table class="tab compatta"><thead><tr><th>Evidenza</th><th>Che cosa mostra</th><th>Livello</th></tr></thead><tbody><tr><td>Tracing, previsione dell'output, Parsons</td><td>saper leggere il codice</td><td><span class="liv l0">0</span></td></tr><tr><td>Spiegazione orale e modifica dal vivo senza IA</td><td>padronanza reale</td><td>tutti</td></tr><tr><td>Piano o pseudocodice prima del codice</td><td>progettazione</td><td><span class="liv l3">3</span> <span class="liv l4">4</span></td></tr><tr><td>Test scritti prima di generare</td><td>comprensione della specifica</td><td><span class="liv l3">3</span> <span class="liv l4">4</span></td></tr><tr><td>Prompt log</td><td>uso consapevole dell'IA</td><td><span class="liv l2">2</span> <span class="liv l3">3</span> <span class="liv l4">4</span></td></tr><tr><td>Cronologia dei commit e PR (Incontro 2)</td><td>percorso incrementale</td><td><span class="liv l2">2</span> <span class="liv l3">3</span> <span class="liv l4">4</span></td></tr><tr><td>Baseline, divisione dei dati, notebook commentato (Incontro 3)</td><td>scelte sui dati</td><td><span class="liv l3">3</span> <span class="liv l4">4</span></td></tr></tbody></table>
+    </section>
+
+    <!-- 05 · CONTENUTO · Tre regole per le consegne AI-powered -->
+    <section class="slide" data-type="contenuto" x-show="current === 5" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/02-teoria/03-regole.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Tre regole per le consegne AI-powered</h2>
+<ol class="step-list"><li>Il prodotto funzionante è <strong>necessario</strong>, ma pesa meno delle evidenze.</li><li>Le evidenze richieste sono <strong>dichiarate prima</strong>.</li><li>C'è sempre un <strong>momento in presenza</strong> in cui lo studente spiega o modifica.</li></ol>
+<p class="body-text">I test di GitHub Actions dicono se il codice si comporta bene, non se lo studente l'ha capito: <strong>riscontro, non voto</strong>. Una consegna AI-proof molto efficace: <em>«scrivi tre test per questa specifica prima di vedere qualunque codice»</em>.</p>
+    </section>
+
+    <!-- 06 · ATTENZIONE · La linea della proposta -->
+    <section class="slide" data-type="attenzione" x-show="current === 6" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/02-teoria/04-linea.md</p>
+<p class="quote">L'IA non dà voti e non valuta singoli studenti.</p>
+<p class="body-text">Gli agenti di feedback (revisore, interrogatore) servono allo studente per prepararsi; il giudizio resta al docente. Mai codice di studenti con i loro nomi dentro un prompt.</p>
+    </section>
+
+    <!-- 07 · CONTENUTO · Una consegna tradizionale -->
+    <section class="slide" data-type="contenuto" x-show="current === 7" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/03-compito/01-consegna.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Una consegna tradizionale</h2>
+<div class="defbox" style="margin-top:1.4rem;">Scrivi un programma che legge i prezzi di uno scontrino, stampa il totale con IVA, il prezzo più alto e quanti articoli costano più di 20 euro.</div>
+<ul class="bullet-list"><li>Antigravity la risolve in pochi secondi.</li><li>Assegnata per casa, <strong>che cosa misura</strong>?</li></ul>
+    </section>
+
+    <!-- 08 · GRIGLIA · La verifica AI-proof -->
+    <section class="slide" data-type="griglia" x-show="current === 8" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/03-compito/02-ai-proof.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Verifica AI-proof: in classe, senza IA</h2>
+<div class="grid-cards"><div class="grid-card del"><h4>Tracing</h4><p>Tabella da completare per un ciclo con accumulatore e condizione (4 iterazioni).</p></div><div class="grid-card gold"><h4>Parsons</h4><p>7 righe da riordinare per «conta gli articoli sopra 20 euro», con il distrattore <code>totale = 0</code> dentro il ciclo.</p></div><div class="grid-card link"><h4>Trova e spiega</h4><p>Il codice dello studente A (<code>range(1, len(prezzi))</code>): l'errore, l'input che lo mostra, la correzione a mano.</p></div><div class="grid-card add"><h4>Spiega una riga</h4><p>«Che cosa succede alla riga 4 se la lista è vuota?»</p></div></div>
+<p class="note">Al computer solo con un editor senza completamento IA (Thonny, IDLE). Modello completo con chiave: verifiche/ai-proof/verifica-liste-cicli.md</p>
+    </section>
+
+    <!-- 09 · CONTENUTO · La consegna AI-powered -->
+    <section class="slide" data-type="contenuto" x-show="current === 9" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/03-compito/03-ai-powered.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Mini-progetto «Report di fine giornata» (livello 4)</h2>
+<p class="body-text">Puoi usare l'IA per generare il codice. Consegni:</p>
+<ol class="step-list"><li>la <strong>specifica</strong>, controllata con l'allenatore di prompt</li><li>almeno <strong>5 test</strong> scritti <strong>prima</strong> di generare</li><li>il <strong>prompt log</strong></li><li>il repository con almeno <strong>4 commit</strong> significativi e i test verdi su GitHub Actions</li></ol>
+<p class="body-text">In classe: 5 minuti di spiegazione e una <strong>modifica dal vivo senza IA</strong>.</p>
+    </section>
+
+    <!-- 10 · TECNICO · La rubrica -->
+    <section class="slide" data-type="tecnico" x-show="current === 10" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/03-compito/04-rubrica.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">La rubrica</h2>
+<table class="tab compatta"><thead><tr><th>Criterio</th><th>Peso</th><th>Da … a …</th></tr></thead><tbody><tr><td>Specifica completa: input, output, vincoli, casi limite, prove</td><td>20%</td><td>«vaga» → «un altro la implementerebbe senza chiedere»</td></tr><tr><td>Test scritti prima del codice, anche sui casi limite</td><td>20%</td><td>«assenti o scritti dopo» → «coprono i casi limite»</td></tr><tr><td><strong>Spiegazione orale e modifica dal vivo</strong></td><td><strong>40%</strong></td><td>«non sa spiegare» → «spiega, prevede e modifica con sicurezza»</td></tr><tr><td>Processo: prompt log, commit, PR</td><td>20%</td><td>«unico commit finale» → «percorso leggibile»</td></tr><tr><td>Il programma funziona</td><td>requisito</td><td>se non funziona se ne discute all'orale, invece di azzerare</td></tr></tbody></table>
+    </section>
+
+    <!-- 11 · CONTENUTO · Variante ML -->
+    <section class="slide" data-type="contenuto" x-show="current === 11" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/03-compito/05-variante-ml.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Per chi ha scelto un'UdA di ML</h2>
+<ul class="bullet-list"><li>La consegna AI-powered diventa: <em>notebook generato dall'IA a partire dalla tua specifica, commentato cella per cella, con baseline e divisione dei dati motivate</em>.</li><li>All'orale: le tre domande raccolte venerdì alla fine dell'Incontro 3.</li><li>Modello: <code>verifiche/ai-powered/notebook-ml.md</code> del repository demo.</li></ul>
+    </section>
+
+    <!-- 12 · TECNICO · Il caso di due studenti -->
+    <section class="slide" data-type="tecnico" x-show="current === 12" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/04-caso/01-caso.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Il caso di due studenti: stessa consegna, due storie</h2>
+<table class="tab compatta"><thead><tr><th></th><th>Marco</th><th>Giulia</th></tr></thead><tbody><tr><td>Storia</td><td>1 commit, domenica 15/03 alle 23:58</td><td>9 commit dal 9 al 15 marzo</td></tr><tr><td>Test</td><td>5, casi normali, tutti verdi</td><td>8, scritti prima del codice: 7 verdi, 1 rosso dichiarato</td></tr><tr><td>Codice</td><td><code>sum</code>, <code>max</code>, list comprehension, type hints</td><td>solo <code>for</code>, <code>if</code>, accumulatori</td></tr><tr><td>Prompt log</td><td>assente</td><td>3 righe, con una correzione sua</td></tr></tbody></table>
+<p class="note">Studenti inventati, repository veri: test eseguiti davvero. Fascicolo a parte.</p>
+    </section>
+
+    <!-- 13 · ESERCIZIO-GUIDATO · Il vostro compito -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 13" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/04-caso/02-compito.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Siete il loro docente</h2>
+<ol class="step-list"><li>Leggete le due consegne nel fascicolo</li><li>Compilate la rubrica per ciascuno: per ogni voce, <strong>l'evidenza</strong> su cui vi basate</li><li>Scrivete <strong>tre domande</strong> per l'orale di Marco e tre per quello di Giulia</li><li>Non si giudicano persone: si giudicano consegne</li></ol>
+<p class="note">20 minuti, individuale</p>
+    </section>
+
+    <!-- 14 · TECNICO · Due storie di commit -->
+    <section class="slide" data-type="tecnico" x-show="current === 14" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/04-caso/03-storie.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Che cosa racconta ciascuna storia?</h2>
+<pre class="code-block"><span class="cm"># Marco</span>
+c4892c9  dom 15/03 23:58  progetto finito
+
+<span class="cm"># Giulia</span>
+ffac71c  lun 09/03 16:10  Specifica del report: prima versione
+48e317e  mar 10/03 15:30  Test scritti prima del codice: 6 casi
+dcc5fab  mer 11/03 18:45  Prima versione generata con l'IA (da rivedere)
+65bdbb1  gio 12/03 16:20  Riscritto con for e if; corretto l'ordine: prima IVA, poi sconto
+0869e24  sab 14/03 11:40  Prompt log: perché fallisce il test della giornata vuota
+<span class="cm">… 9 commit in tutto</span></pre>
+    </section>
+
+    <!-- 15 · TECNICO · La prova del docente -->
+    <section class="slide" data-type="tecnico" x-show="current === 15" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/04-caso/04-prova.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">La prova del docente: una giornata senza scontrini</h2>
+<pre class="code-block"><span class="op">&gt;&gt;&gt;</span> report([])                 <span class="cm"># Marco</span>
+<span class="k-del">ValueError: max() arg is an empty sequence</span>
+
+<span class="op">&gt;&gt;&gt;</span> report_giornata([])        <span class="cm"># Giulia</span>
+(0, 0, None, 0)                   <span class="cm"># il suo test si aspettava 0: l'ha scritto nel prompt log</span></pre>
+<p class="body-text">I test di Marco sono tutti verdi, ma provano solo i casi normali. Il test rosso di Giulia segnala una cosa che lei ha visto e la consegna non diceva.</p>
+    </section>
+
+    <!-- 16 · ATTENZIONE · L'orale dal vivo -->
+    <section class="slide" data-type="attenzione" x-show="current === 16" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/04-caso/05-orale.md</p>
+<p class="quote">Uno di voi interroga. Io sono Marco.</p>
+<p class="body-text">Cinque minuti, le vostre domande. Gli altri osservano: che cosa vi dice l'orale che il fascicolo non diceva?</p>
+    </section>
+
+    <!-- 17 · ATTENZIONE · Un commit non è una prova -->
+    <section class="slide" data-type="attenzione" x-show="current === 17" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/04-caso/06-discussione.md</p>
+<p class="quote">Un solo commit non è una prova di copiatura.</p>
+<p class="body-text">È un motivo per fare domande, non per sanzionare. Che cosa chiedo nella mia consegna perché la storia di Giulia diventi la regola?</p>
+    </section>
+
+    <!-- 18 · CONTENUTO · Sei consegne da riprogettare -->
+    <section class="slide" data-type="contenuto" x-show="current === 18" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-consegne/01-domande.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Sei consegne da riprogettare</h2>
+<ol class="step-list"><li><strong>Che cosa misura oggi</strong>, se lo studente ha l'IA a casa?</li><li><strong>Versione AI-proof</strong>: in classe, senza IA. Che cosa fa lo studente?</li><li><strong>Versione AI-powered</strong>: IA ammessa. Quali evidenze, che cosa all'orale?</li></ol>
+<p class="note">Si può partire dalle proposte del Gem dell'agente D5. Il lavoro vero è scegliere e adattare.</p>
+    </section>
+
+    <!-- 19 · GRIGLIA · Le sei consegne -->
+    <section class="slide" data-type="griglia" x-show="current === 19" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-consegne/02-elenco.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Le sei consegne</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>1 · Python, terza</h4><p>Una funzione che conta le vocali di una parola.</p></div><div class="grid-card gold"><h4>2 · SQL, quarta</h4><p>I clienti di Milano con più di 2 ordini.</p></div><div class="grid-card add"><h4>3 · HTML e CSS, terza</h4><p>La pagina di presentazione di una piccola azienda.</p></div><div class="grid-card link"><h4>4 · Foglio di calcolo</h4><p>La provvigione del 5% sopra i 1000 € con SE.</p></div><div class="grid-card gold"><h4>5 · pandas, quarta-quinta</h4><p>Incasso della settimana da un CSV, con grafico.</p></div><div class="grid-card del"><h4>6 · Testo tecnico, quinta</h4><p>I vantaggi del cloud per una piccola impresa.</p></div></div>
+    </section>
+
+    <!-- 20 · TECNICO · Consegna 1: le vocali -->
+    <section class="slide" data-type="tecnico" x-show="current === 20" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-consegne/03-vocali.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Consegna 1 · il codice da correggere</h2>
+<pre class="code-block">def conta_vocali(parola):
+    conteggio = 0
+    for lettera in parola:
+        if lettera in "aeiou":
+            conteggio = conteggio + 1
+    return conteggio
+
+conta_vocali("albero")   <span class="cm"># 3</span>
+conta_vocali("Albero")   <span class="cm"># 2</span>
+conta_vocali("perché")   <span class="cm"># 1</span></pre>
+    </section>
+
+    <!-- 21 · TECNICO · Consegna 2: due query -->
+    <section class="slide" data-type="tecnico" x-show="current === 21" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-consegne/04-sql.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Consegna 2 · due query, due risultati</h2>
+<pre class="code-block"><span class="cm">-- A: GROUP BY c.id, c.nome</span>      →  Neri 3 · Rossi 3
+<span class="cm">-- B: GROUP BY c.citta</span>            →  Milano 7
+<span class="cm">-- C: WHERE COUNT(*) &gt; 2</span>          →  misuse of aggregate: COUNT()</pre>
+<p class="body-text">Tabelle inventate: tre clienti a Milano (Rossi 3 ordini, Bianchi 1, Neri 3). Versione AI-proof: scrivere a mano il risultato di A e di B su tabelle stampate, poi dire quale risponde alla domanda.</p>
+    </section>
+
+    <!-- 22 · TECNICO · Consegna 5: il CSV -->
+    <section class="slide" data-type="tecnico" x-show="current === 22" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-consegne/05-pandas.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Consegna 5 · un «n.d.» nel CSV</h2>
+<pre class="code-block">df = pd.read_csv("vendite.csv")   <span class="cm"># lun 10, mar 20, mer n.d., gio 15</span>
+df["importo"].isnull().sum()      <span class="cm"># 0</span>
+df["importo"].sum()               <span class="cm"># '1020n.d.15'</span>
+
+df = pd.read_csv("vendite.csv", na_values=["n.d."])
+df["importo"].sum()               <span class="cm"># 45.0</span></pre>
+    </section>
+
+    <!-- 23 · CONFRONTO · Consegne 3, 4 e 6 -->
+    <section class="slide" data-type="confronto" x-show="current === 23" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-consegne/06-altre.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Quando l'IA fa bene: che cosa resta da valutare?</h2>
+<div class="compare"><div class="compare-col link"><h3>Che cosa produce l'IA</h3><ul><li>una pagina bella (3)</li><li>la formula giusta in D2 (4)</li><li>un testo scorrevole sul cloud (6)</li></ul></div><div class="compare-col add"><h3>Che cosa resta allo studente</h3><ul><li>accessibilità, contenuti veri, modifica dal vivo</li><li>perché copiata in basso sbaglia: <code>C1</code> o <code>$C$1</code></li><li>fonti, un caso concreto, l'errore fattuale da trovare, la difesa orale</li></ul></div></div>
+    </section>
+
+    <!-- 24 · TECNICO · L'orale per 25 studenti -->
+    <section class="slide" data-type="tecnico" x-show="current === 24" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/06-orale/01-logistica.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Cinque minuti a testa: si può fare?</h2>
+<table class="tab compatta"><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>Tempo</td><td>25 studenti × 5 minuti = circa 2 ore: due lezioni, o più lezioni a rotazione</td></tr><tr><td>Gli altri</td><td>lavorano a un'attività di livello 0 (tracing, Parsons, previsioni)</td></tr><tr><td>Che cosa si porta</td><td>il proprio codice, aperto; niente IA durante l'orale</td></tr><tr><td>Che cosa si annota</td><td>una scheda di osservazione per studente, compilata dal docente</td></tr></tbody></table>
+    </section>
+
+    <!-- 25 · TECNICO · Sei tipi di domanda -->
+    <section class="slide" data-type="tecnico" x-show="current === 25" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/06-orale/02-domande.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Sei tipi di domanda</h2>
+<table class="tab compatta"><thead><tr><th>Tipo</th><th>Mostra</th><th>Esempio sul report di fine giornata</th></tr></thead><tbody><tr><td>Spiega</td><td>leggere il proprio codice</td><td>«Che cosa fa questa riga?»</td></tr><tr><td>Prevedi</td><td>tracing senza eseguire</td><td>«Che cosa restituisce con <code>[[40], [30, 20]]</code>?»</td></tr><tr><td>Modifica</td><td>padronanza, senza IA</td><td>«Lo sconto scatta da 60 €.»</td></tr><tr><td>Perché</td><td>scelte di progetto</td><td>«Perché 0 e non niente per la giornata vuota?»</td></tr><tr><td>Processo</td><td>uso dell'IA e storia</td><td>«Che cosa hai rifiutato di quello che ti ha proposto l'IA?»</td></tr><tr><td>Limite</td><td>casi limite</td><td>«Con 50 € esatti c'è lo sconto?»</td></tr></tbody></table>
+<p class="note">In 5 minuti: una Spiega, una Prevedi, una Modifica. Le altre se restano dubbi.</p>
+    </section>
+
+    <!-- 26 · ESERCIZIO-GUIDATO · Le vostre sei domande -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 26" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/06-orale/03-vostre.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Le vostre sei domande</h2>
+<ol class="step-list"><li>Scegliete una consegna della vostra UdA (o una delle sei di prima)</li><li>Scrivete una domanda per tipo: Spiega, Prevedi, Modifica, Perché, Processo, Limite</li><li>Segnate le tre che usereste in 5 minuti</li><li>Provatele sul Gem S8 Interrogatore, se avete tempo: le fa lui a voi</li></ol>
+<p class="note">Scheda di osservazione e tabella da compilare nei materiali dell'Incontro 4, parte B</p>
+    </section>
+
+    <!-- 27 · TECNICO · Il patto d'aula -->
+    <section class="slide" data-type="tecnico" x-show="current === 27" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-patto/01-semaforo.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Il patto d'aula: lo spettro detto agli studenti</h2>
+<table class="tab compatta"><thead><tr><th>Attività</th><th>Semaforo</th><th>Che cosa puoi fare</th></tr></thead><tbody><tr><td>Esercizi di previsione e tracing</td><td><span class='liv l0'>ROSSO</span></td><td>Niente IA: allenati a leggere il codice da solo</td></tr><tr><td>Studio dei concetti</td><td><span class='liv l1'>GIALLO</span></td><td>Solo il tutor della classe</td></tr><tr><td>Errori nel tuo codice</td><td><span class='liv l1'>GIALLO</span></td><td>Traduttore di errori e paperella: domande, non soluzioni</td></tr><tr><td>Esercizi «trova l'errore dell'IA»</td><td><span class='liv l1'>GIALLO</span></td><td>L'IA ha scritto il codice: tu lo valuti</td></tr><tr><td>Mini-progetto finale</td><td><span class='liv l4'>VERDE</span></td><td>Puoi generare il codice, con le regole del progetto</td></tr><tr><td>Verifica in classe</td><td><span class='liv l0'>ROSSO</span></td><td>Niente IA</td></tr></tbody></table>
+    </section>
+
+    <!-- 28 · GRIGLIA · Il resto del patto -->
+    <section class="slide" data-type="griglia" x-show="current === 28" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-patto/02-regole.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Regole, dichiarazione, divieti</h2>
+<div class="grid-cards"><div class="grid-card add"><h4>Regole del VERDE</h4><p>Prima la specifica · 5 test prima del codice · prompt log · almeno 4 commit · orale senza IA.</p></div><div class="grid-card link"><h4>Dichiarazione d'uso</h4><p>Con ogni consegna: strumenti usati, per quali parti, che cosa ho cambiato, parti fatte da me.</p></div><div class="grid-card del"><h4>Mai</h4><p>Nomi, voti o dati personali nelle chat. Consegnare codice che non sai spiegare.</p></div><div class="grid-card gold"><h4>UdA di ML</h4><p>«Aiuto solo per la sintassi di pandas: baseline, divisione dei dati e metrica le decidi e le motivi tu.»</p></div></div>
+<p class="note">Strumenti ed età: funzioni IA di Colab solo 18+; Antigravity non sotto i 18 anni.</p>
+    </section>
+
+    <!-- 29 · TECNICO · L'allenatore di prompt -->
+    <section class="slide" data-type="tecnico" x-show="current === 29" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/05-patto/03-allenatore.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">S9 · L'allenatore di prompt</h2>
+<table class="tab"><thead><tr><th>Prova</th><th>Comportamento atteso</th></tr></thead><tbody><tr><td><code>fammi un programma per gli scontrini</code></td><td>Tabella degli elementi mancanti (scopo, input, output, vincoli, casi limite, prove). <strong>Nessun codice.</strong></td></tr><tr><td>la specifica completa del report di fine giornata</td><td>Riconosce che è completa; al massimo chiede un caso limite (i resi)</td></tr></tbody></table>
+<p class="note">Istruzioni: agenti/S9-allenatore-di-prompt.md del repository demo, o il catalogo.</p>
+    </section>
+
+    <!-- 30 · CONTENUTO · Dieci dilemmi -->
+    <section class="slide" data-type="contenuto" x-show="current === 30" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/08-dilemmi/01-regola.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Dieci dilemmi</h2>
+<ul class="bullet-list"><li>Ogni dilemma: <strong>che cosa fareste</strong>, e quale regola vi aiuta.</li><li>Quale riga del vostro patto d'aula risponde? Quale manca?</li><li>Che cosa dice (o non dice) il regolamento del vostro istituto?</li></ul>
+<p class="note">Riferimenti normativi (GDPR, AI Act, indicazioni ministeriali): da verificare prima di citarli. Qui si discute di scelte didattiche.</p>
+    </section>
+
+    <!-- 31 · GRIGLIA · Dilemmi 1-5 -->
+    <section class="slide" data-type="griglia" x-show="current === 31" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/08-dilemmi/02-uno-cinque.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Dilemmi 1-5</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>1 · Il PDP</h4><p>IA in verifica come strumento compensativo, «come la calcolatrice».</p></div><div class="grid-card gold"><h4>2 · Il genitore</h4><p>«Mio figlio, 15 anni, usa un chatbot per i compiti. Va bene?»</p></div><div class="grid-card del"><h4>3 · Il rilevatore</h4><p>«97% IA»: il collega vuole mettere 2.</p></div><div class="grid-card add"><h4>4 · Il codice perfetto</h4><p>All'orale non sa spiegarlo, ma giura di averlo scritto.</p></div><div class="grid-card link"><h4>5 · L'account personale</h4><p>16 anni, a casa usa uno strumento riservato ai maggiorenni.</p></div></div>
+    </section>
+
+    <!-- 32 · GRIGLIA · Dilemmi 6-10 -->
+    <section class="slide" data-type="griglia" x-show="current === 32" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/08-dilemmi/03-sei-dieci.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Dilemmi 6-10</h2>
+<div class="grid-cards"><div class="grid-card gold"><h4>6 · La lingua</h4><p>Italiano L2: l'IA solo per riformulare la spiegazione del suo codice.</p></div><div class="grid-card del"><h4>7 · Il divieto</h4><p>Il dipartimento vuole vietare l'IA ovunque.</p></div><div class="grid-card del"><h4>8 · La scorciatoia</h4><p>Un collega corregge con un chatbot, con nomi e cognomi.</p></div><div class="grid-card add"><h4>9 · Lo studente che si annoia</h4><p>Progetti oltre il programma, e niente livello 0.</p></div><div class="grid-card link"><h4>10 · Il gruppo</h4><p>Uno solo ha usato l'IA, gli altri non lo sapevano.</p></div></div>
+    </section>
+
+    <!-- 33 · ESERCIZIO-GUIDATO · Una lezione per la prossima settimana -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 33" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/09-chiusura/01-lezione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Una lezione per la prossima settimana</h2>
+<ol class="step-list"><li>Quale lezione, in quale classe, quando</li><li>La consegna riprogettata, con le evidenze che chiedete</li><li>Le righe del patto per quella lezione</li><li>Che cosa osserverete</li></ol>
+<p class="note">Scheda completa nei materiali, parte D (riserva 1: 45 minuti)</p>
+    </section>
+
+    <!-- 34 · CHIUSURA · Chiusura -->
+    <section class="slide" data-type="chiusura" x-show="current === 34" x-transition.opacity.duration.300ms>
+      <span class="badge core">● incontro 4</span>
+      <p class="path"><b>lab6</b>/incontro-4/fine.md</p>
+<h2 class="title">Le preoccupazioni del primo giorno</h2>
+<p class="body-text">Quali hanno trovato una risposta? Quali restano aperte? Proposta per la scuola: il template del kit e il patto d'aula come standard d'istituto, con un referente e una revisione annuale.</p>
+<p class="body-text" style="margin-top:1.4rem; color:var(--ink);">Ultima cosa: il questionario di gradimento, dal telefono. Grazie.</p>
+    </section>
+
+    <!-- 35 · GRIGLIA · Riserva: una lezione completa -->
+    <section class="slide" data-type="griglia" x-show="current === 35" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/riserva/01-lezione.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Riserva · la lezione, per intero (45 min)</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>La lezione</h4><p>UdA, classe, quando, fase, livello dello spettro.</p></div><div class="grid-card gold"><h4>La consegna</h4><p>Una consegna vera nel Gem dell'agente D5; una riprogettazione scelta e riscritta.</p></div><div class="grid-card add"><h4>Il patto</h4><p>Le righe del semaforo per quella lezione.</p></div><div class="grid-card del"><h4>L'agente</h4><p>Uno solo, collaudato con tre prompt.</p></div><div class="grid-card link"><h4>Che cosa osservo</h4><p>Le quattro righe della sperimentazione.</p></div></div>
+    </section>
+
+    <!-- 36 · GRIGLIA · Riserva: test e kit -->
+    <section class="slide" data-type="griglia" x-show="current === 36" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/riserva/02-test-kit.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Riserva · test e template d'istituto</h2>
+<div class="grid-cards"><div class="grid-card gold"><h4>Test con l'agente D3 · 15 min</h4><p>Test pytest per la propria consegna, divisi in casi normali, limite e input non validi: verificano la specifica, non il codice.</p></div><div class="grid-card link"><h4>Il template d'istituto · 10 min</h4><p>Che cosa servirebbe perché il template del kit diventi lo standard della scuola: chi lo cura, quando si rivede, chi decide.</p></div></div>
+    </section>
+
+    <!-- 37 · ATTENZIONE · Red team -->
+    <section class="slide" data-type="attenzione" x-show="current === 37" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/04-verifiche/02-red-team.md</p>
+<p class="quote">Incollate le vostre consegne in Gemini, come farebbe uno studente.</p>
+<p class="body-text">La parte AI-proof resta valida anche se lo studente ha l'IA a casa? Le evidenze della parte AI-powered si falsificano facilmente? Se sì, che cosa aggiungete all'orale? Una riga nel diario di bordo.</p>
+    </section>
+
+    <!-- 38 · CONFRONTO · Retrospettiva -->
+    <section class="slide" data-type="confronto" x-show="current === 38" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/08-retrospettiva/spettro.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Retrospettiva sullo spettro</h2>
+<div class="compare"><div class="compare-col link"><h3>Martedì 29 settembre</h3><ul><li>la scheda di posizionamento dell'Incontro 1</li></ul></div><div class="compare-col add"><h3>Oggi</h3><ul><li>la sequenza delle lezioni nel README</li></ul></div></div>
+<p class="body-text">Quali fasi hanno cambiato livello, e in quale direzione? Perché?</p>
+    </section>
+
+    <!-- 39 · GRIGLIA · La scheda UdA nel README -->
+    <section class="slide" data-type="griglia" x-show="current === 39" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/06-kit/01-readme.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">La scheda UdA nel README</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Chi e quando</h4><p>Titolo, classe, durata, prerequisiti.</p></div><div class="grid-card link"><h4>Obiettivi</h4><p>Osservabili: prevedere, scrivere, individuare, spiegare.</p></div><div class="grid-card gold"><h4>Misconcezioni</h4><p>Quelle che l'UdA affronta davvero.</p></div><div class="grid-card gold"><h4>Sequenza</h4><p>Ogni lezione con livello (0-4) e AI-proof / AI-powered.</p></div><div class="grid-card add"><h4>Materiali</h4><p>Agenti, artefatti con link Pages, notebook con link Colab, verifiche.</p></div><div class="grid-card del"><h4>Trasparenza</h4><p>Uso dell'IA nella preparazione del kit (dal diario di bordo), limiti noti, licenze.</p></div></div>
+    </section>
+
+    <!-- 40 · CONFRONTO · Licenze e chiavi -->
+    <section class="slide" data-type="confronto" x-show="current === 40" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/06-kit/02-licenze-chiavi.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Due decisioni prima di pubblicare</h2>
+<div class="compare"><div class="compare-col link"><h3>Licenze</h3><ul><li><code>LICENSE</code> MIT per il codice (sostituire NOME COGNOME)</li><li>CC BY 4.0 per i materiali, dichiarata nel README</li><li>senza licenza nessuno può riusare il vostro lavoro</li></ul></div><div class="compare-col gold"><h3>Soluzioni e chiavi</h3><ul><li>in un repository pubblico le legge chiunque, anche gli studenti</li><li>per le verifiche AI-proof da usare in classe: repository <strong>privato</strong></li><li>oppure: accettarle come materiale di autoapprendimento</li></ul></div></div>
+    </section>
+
+    <!-- 41 · ESERCIZIO-GUIDATO · La release -->
+    <section class="slide" data-type="esercizio-guidato" x-show="current === 41" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/06-kit/03-release.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Release v1.0</h2>
+<ol class="step-list"><li><code>git switch -c kit-v1</code>: README, licenza, <code>SPERIMENTAZIONE.md</code></li><li>Commit, push, PR <em>Kit v1.0</em>, merge</li><li><strong>Releases → Draft a new release</strong></li><li><strong>Choose a tag</strong>: <code>v1.0</code> → <em>Create new tag</em></li><li>Titolo <em>Kit v1.0</em>, tre righe di note → <strong>Publish release</strong></li></ol>
+<p class="note">Il formatore la fa prima sul repository demo, come esempio.</p>
+    </section>
+
+    <!-- 42 · GRIGLIA · Riserva: agenti -->
+    <section class="slide" data-type="griglia" x-show="current === 42" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/riserva/01-agenti.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Riserva · altri agenti</h2>
+<div class="grid-cards"><div class="grid-card gold"><h4>S7 · Revisore formativo · 15 min</h4><p>Gem con la rubrica di leggibilità (nomi, struttura, casi limite, commenti), collaudato sul codice dello studente B.</p></div><div class="grid-card link"><h4>S6 · Cliente simulato · 15 min</h4><p>La signora Rossi e i requisiti nascosti: IVA inclusa, soglia di sconto, tessera fedeltà, resi negativi.</p></div><div class="grid-card add"><h4>Il patto letto da uno studente · 10 min</h4><p>Gemini fa lo studente di terza che legge il patto: «e se l'IA mi aiuta solo un pochino nella verifica?»</p></div></div>
+    </section>
+
+    <!-- 43 · GRIGLIA · Riserva: pagina e orale -->
+    <section class="slide" data-type="griglia" x-show="current === 43" x-transition.opacity.duration.300ms>
+      <span class="badge extra">○ riserva</span>
+      <p class="path"><b>lab6</b>/incontro-4/kit/riserva/02-pagina-orale.md</p>
+<h2 class="title" style="font-size: clamp(1.4rem, 2.7vw, 2.3rem); max-width:36ch;">Riserva · pagina indice e orale</h2>
+<div class="grid-cards"><div class="grid-card link"><h4>Pagina indice del kit · 10 min</h4><p>Antigravity crea <code>index.html</code>: titolo, classe, obiettivi, link ad artefatti, esercizi e patto. Niente soluzioni. Prima il piano, poi la verifica dei link nel browser.</p></div><div class="grid-card del"><h4>Orale in 5 minuti per 25 studenti · 10 min</h4><p>Tempi, rotazione, che cosa fanno gli altri nel frattempo: la prima obiezione dei colleghi.</p></div></div>
+    </section>
+
+      <p class="mode" x-show="soloCore">solo incontro 4</p>
+      <p class="counter" x-text="String(posizione()).padStart(2,'0') + ' / ' + String(visibili().length).padStart(2,'0')"></p>
+      <div class="controls">
+        <button class="nav-btn" @click="prev()" aria-label="Slide precedente">‹</button>
+        <div class="rail" role="tablist" aria-label="Naviga tra le slide">
+          <template x-for="i in visibili()" :key="i">
+            <button class="rail-dot" :class="{active: current === i, core: slides[i].core}" @click="goto(i)" role="tab" :aria-selected="current === i" :aria-label="slides[i].label"></button>
+          </template>
+        </div>
+        <button class="nav-btn" @click="next()" aria-label="Slide successiva">›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="presenter" x-data="relatore()" x-init="init()" :data-theme="'dark'" data-theme="dark">
+  <div>
+    <p class="pmeta" x-text="'Slide ' + (current+1) + ' di ' + slides.length"></p>
+    <h1 x-text="slides[current] ? slides[current].label : ''"></h1>
+    <p class="pnotes" x-text="slides[current] ? (slides[current].notes || '—') : ''"></p>
+    <p class="pnext" x-text="'Prossima: ' + (slides[current+1] ? slides[current+1].label : 'fine')"></p>
+  </div>
+  <div>
+    <p class="clock" x-text="orologio"></p>
+    <p class="pmeta" style="margin-top:1rem">Frecce o spazio in questa finestra per avanzare: la presentazione segue.</p>
+  </div>
+</div>
+
+<script>
+  const SLIDES = [{"type": "cover", "label": "Copertina", "core": true, "notes": ""}, {"type": "tecnico", "label": "Le tre ore di oggi", "core": true, "notes": ""}, {"type": "attenzione", "label": "Che cosa porterò in classe", "core": true, "notes": ""}, {"type": "attenzione", "label": "Rilevatori", "core": true, "notes": ""}, {"type": "tecnico", "label": "Le evidenze del processo", "core": true, "notes": ""}, {"type": "contenuto", "label": "Tre regole per le consegne AI-powered", "core": true, "notes": ""}, {"type": "attenzione", "label": "La linea della proposta", "core": true, "notes": ""}, {"type": "contenuto", "label": "Una consegna tradizionale", "core": true, "notes": ""}, {"type": "griglia", "label": "La verifica AI-proof", "core": true, "notes": ""}, {"type": "contenuto", "label": "La consegna AI-powered", "core": true, "notes": ""}, {"type": "tecnico", "label": "La rubrica", "core": true, "notes": ""}, {"type": "contenuto", "label": "Variante ML", "core": true, "notes": ""}, {"type": "tecnico", "label": "Il caso di due studenti", "core": true, "notes": ""}, {"type": "esercizio-guidato", "label": "Il vostro compito", "core": true, "notes": ""}, {"type": "tecnico", "label": "Due storie di commit", "core": true, "notes": ""}, {"type": "tecnico", "label": "La prova del docente", "core": true, "notes": ""}, {"type": "attenzione", "label": "L'orale dal vivo", "core": true, "notes": ""}, {"type": "attenzione", "label": "Un commit non è una prova", "core": true, "notes": ""}, {"type": "contenuto", "label": "Sei consegne da riprogettare", "core": true, "notes": ""}, {"type": "griglia", "label": "Le sei consegne", "core": true, "notes": ""}, {"type": "tecnico", "label": "Consegna 1: le vocali", "core": true, "notes": ""}, {"type": "tecnico", "label": "Consegna 2: due query", "core": true, "notes": ""}, {"type": "tecnico", "label": "Consegna 5: il CSV", "core": true, "notes": ""}, {"type": "confronto", "label": "Consegne 3, 4 e 6", "core": true, "notes": ""}, {"type": "tecnico", "label": "L'orale per 25 studenti", "core": true, "notes": ""}, {"type": "tecnico", "label": "Sei tipi di domanda", "core": true, "notes": ""}, {"type": "esercizio-guidato", "label": "Le vostre sei domande", "core": true, "notes": ""}, {"type": "tecnico", "label": "Il patto d'aula", "core": true, "notes": ""}, {"type": "griglia", "label": "Il resto del patto", "core": true, "notes": ""}, {"type": "tecnico", "label": "L'allenatore di prompt", "core": true, "notes": ""}, {"type": "contenuto", "label": "Dieci dilemmi", "core": true, "notes": ""}, {"type": "griglia", "label": "Dilemmi 1-5", "core": true, "notes": ""}, {"type": "griglia", "label": "Dilemmi 6-10", "core": true, "notes": ""}, {"type": "esercizio-guidato", "label": "Una lezione per la prossima settimana", "core": true, "notes": ""}, {"type": "chiusura", "label": "Chiusura", "core": true, "notes": ""}, {"type": "griglia", "label": "Riserva: una lezione completa", "core": false, "notes": ""}, {"type": "griglia", "label": "Riserva: test e kit", "core": false, "notes": ""}, {"type": "attenzione", "label": "Red team", "core": false, "notes": ""}, {"type": "confronto", "label": "Retrospettiva", "core": false, "notes": ""}, {"type": "griglia", "label": "La scheda UdA nel README", "core": false, "notes": ""}, {"type": "confronto", "label": "Licenze e chiavi", "core": false, "notes": ""}, {"type": "esercizio-guidato", "label": "La release", "core": false, "notes": ""}, {"type": "griglia", "label": "Riserva: agenti", "core": false, "notes": ""}, {"type": "griglia", "label": "Riserva: pagina e orale", "core": false, "notes": ""}];
+  const canale = ('BroadcastChannel' in window) ? new BroadcastChannel('lab6-inc4') : null;
+  const PRESENTER = new URLSearchParams(location.search).has('relatore');
+  if (PRESENTER) document.body.classList.add('is-presenter');
+
+  function deck(){
+    return {
+      current: 0, notesOn: false, theme: 'dark', soloCore: false, slides: SLIDES,
+      init(){
+        if (canale) canale.onmessage = (e) => { if (e.data && typeof e.data.goto === 'number') this.current = e.data.goto; };
+      },
+      visibili(){ return this.slides.map((s,i) => i).filter(i => !this.soloCore || this.slides[i].core); },
+      posizione(){ return this.visibili().indexOf(this.current) + 1; },
+      annuncia(){ if (canale && !PRESENTER) canale.postMessage({ stato: this.current }); },
+      next(){ const v = this.visibili(); const p = v.indexOf(this.current); if (p < v.length - 1) { this.current = v[p+1]; this.annuncia(); } },
+      prev(){ const v = this.visibili(); const p = v.indexOf(this.current); if (p > 0) { this.current = v[p-1]; this.annuncia(); } },
+      goto(i){ this.current = i; this.annuncia(); },
+      toggleCore(){
+        this.soloCore = !this.soloCore;
+        if (this.soloCore && !this.slides[this.current].core) {
+          const succ = this.visibili().find(i => i > this.current);
+          this.current = succ !== undefined ? succ : this.visibili()[0];
+        }
+      },
+      tasto(e){
+        if (PRESENTER) return;
+        const k = e.key;
+        if (k === 'ArrowRight' || k === ' ' || k === 'PageDown'){ this.next(); e.preventDefault(); }
+        else if (k === 'ArrowLeft' || k === 'PageUp'){ this.prev(); }
+        else if (k === 'f' || k === 'F'){ this.toggleCore(); }
+        
+        else if (k === 't' || k === 'T'){ this.theme = this.theme === 'dark' ? 'light' : 'dark'; }
+        
+      },
+      apriRelatore(){ window.open(location.pathname + '?relatore=1', 'relatore', 'width=1100,height=700'); setTimeout(() => this.annuncia(), 800); },
+      toggleFullscreen(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+    }
+  }
+
+  function relatore(){
+    return {
+      current: 0, slides: SLIDES, orologio: '00:00', t0: Date.now(),
+      init(){
+        if (!PRESENTER) return;
+        if (canale) canale.onmessage = (e) => { if (e.data && typeof e.data.stato === 'number') this.current = e.data.stato; };
+        setInterval(() => { const s = Math.floor((Date.now() - this.t0) / 1000); this.orologio = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }, 1000);
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight' || e.key === ' ') { this.vai(this.current + 1); e.preventDefault(); }
+          if (e.key === 'ArrowLeft') this.vai(this.current - 1);
+        });
+      },
+      vai(i){ if (i < 0 || i >= this.slides.length) return; this.current = i; if (canale) canale.postMessage({ goto: i }); }
+    }
+  }
+</script>
+</body>
+</html>
